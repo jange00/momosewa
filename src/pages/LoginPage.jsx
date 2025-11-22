@@ -74,12 +74,14 @@ const LoginPage = () => {
       
       setIsLoading(false);
       
-      // Redirect based on user role
-      if (userRole && ROLE_DASHBOARD_ROUTES[userRole]) {
+      // For customers, stay on landing page (navbar will show user menu)
+      // For other roles, redirect to their dashboard
+      if (userRole === USER_ROLES.CUSTOMER) {
+        navigate("/"); // Stay on landing page
+      } else if (userRole && ROLE_DASHBOARD_ROUTES[userRole]) {
         navigate(ROLE_DASHBOARD_ROUTES[userRole]);
       } else {
         // Default to landing page if no role is set
-        // In production, you might want to show an error or redirect to signup
         navigate("/");
       }
     }, 1000);
@@ -99,7 +101,11 @@ const LoginPage = () => {
       // In production, role should come from API response
       const userRole = localStorage.getItem("role");
       
-      if (userRole && ROLE_DASHBOARD_ROUTES[userRole]) {
+      // For customers, stay on landing page (navbar will show user menu)
+      // For other roles, redirect to their dashboard
+      if (userRole === USER_ROLES.CUSTOMER) {
+        navigate("/"); // Stay on landing page
+      } else if (userRole && ROLE_DASHBOARD_ROUTES[userRole]) {
         navigate(ROLE_DASHBOARD_ROUTES[userRole]);
       } else {
         // No role found - might need to complete profile or select role
