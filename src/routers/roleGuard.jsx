@@ -1,13 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { USER_ROLES, ROLE_DASHBOARD_ROUTES } from '../common/roleConstants';
 
-/**
- * Protected Route Component with Role-Based Access Control
- * @param {Object} props
- * @param {React.ReactNode} props.children - The component to render if access is granted
- * @param {string|string[]} props.requiredRole - Single role or array of roles that can access this route
- * @returns {React.ReactNode}
- */
 const ProtectedRoute = ({ children, requiredRole }) => {
   const role = localStorage.getItem("role");
 
