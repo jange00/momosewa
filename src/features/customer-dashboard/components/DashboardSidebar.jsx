@@ -88,6 +88,19 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
             </div>
           </div>
 
+          {/* Quick Action - Order Now Button */}
+          <div className="px-4 pb-4">
+            <NavLink
+              to="/menu"
+              onClick={() => onClose && onClose()}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-deep-maroon via-[#7a2533] to-deep-maroon text-white font-bold text-sm hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg relative overflow-hidden group"
+            >
+              <span className="text-lg">🥟</span>
+              <span>Order Now</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-golden-amber/25 via-transparent to-golden-amber/25 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </NavLink>
+          </div>
+
           {/* Navigation Menu */}
           <nav className="flex-1 overflow-y-auto p-4">
             <div className="space-y-1">
@@ -115,7 +128,7 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
           </nav>
 
           {/* Footer Actions */}
-          <div className="p-4 border-t border-charcoal-grey/10 space-y-2">
+          <div className="p-4 border-t border-charcoal-grey/10">
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
@@ -124,15 +137,6 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
               <FiLogOut className="w-5 h-5" />
               <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
             </button>
-            
-            {/* Quick Link to Menu */}
-            <NavLink
-              to="/menu"
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-deep-maroon via-[#7a2533] to-deep-maroon text-white font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all duration-300"
-            >
-              <span>🥟</span>
-              <span>Order Now</span>
-            </NavLink>
           </div>
         </div>
       </aside>

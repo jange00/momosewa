@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { FiChevronDown, FiLogOut } from "react-icons/fi";
 import { DASHBOARD_MENU_ITEMS } from "../../customer-dashboard/constants/menuItems";
 import { USER_ROLES } from "../../../common/roleConstants";
@@ -103,6 +103,19 @@ const UserMenuDropdown = () => {
               </div>
             </div>
 
+            {/* Order Now Button - Prominent */}
+            <div className="px-4 pt-2 pb-3">
+              <Link
+                to="/menu"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-deep-maroon via-[#7a2533] to-deep-maroon text-white font-bold text-sm hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg relative overflow-hidden group"
+              >
+                <span className="text-lg">🥟</span>
+                <span>Order Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-golden-amber/25 via-transparent to-golden-amber/25 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </Link>
+            </div>
+
             {/* Menu Items */}
             <div className="py-2">
               {DASHBOARD_MENU_ITEMS.map((item) => {
@@ -114,7 +127,7 @@ const UserMenuDropdown = () => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 font-semibold text-sm transition-all duration-200 ${
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 font-semibold text-sm transition-all duration-200 ${
                       isActive
                         ? "bg-deep-maroon/10 text-deep-maroon"
                         : "text-charcoal-grey/70 hover:bg-charcoal-grey/5 hover:text-deep-maroon"
