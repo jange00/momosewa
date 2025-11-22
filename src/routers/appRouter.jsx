@@ -18,13 +18,14 @@ import MenuPage from "../pages/MenuPage";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 
-// Placeholder dashboard pages (to be created)
-const CustomerDashboard = () => (
-  <div className="p-8">
-    <h1 className="text-3xl font-bold">Customer Dashboard</h1>
-    <p className="mt-4 text-gray-600">Welcome to your customer dashboard!</p>
-  </div>
-);
+// Customer Dashboard Pages
+import CustomerDashboardPage from "../pages/customer/CustomerDashboardPage";
+import CustomerOrdersPage from "../pages/customer/CustomerOrdersPage";
+import CustomerAddressesPage from "../pages/customer/CustomerAddressesPage";
+import CustomerReviewsPage from "../pages/customer/CustomerReviewsPage";
+import CustomerNotificationsPage from "../pages/customer/CustomerNotificationsPage";
+import CustomerProfilePage from "../pages/customer/CustomerProfilePage";
+
 
 const VendorDashboard = () => (
   <div className="p-8">
@@ -105,7 +106,27 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/customer/dashboard",
-        element: <CustomerDashboard />,
+        element: <CustomerDashboardPage />,
+      },
+      {
+        path: "/customer/orders",
+        element: <CustomerOrdersPage />,
+      },
+      {
+        path: "/customer/addresses",
+        element: <CustomerAddressesPage />,
+      },
+      {
+        path: "/customer/reviews",
+        element: <CustomerReviewsPage />,
+      },
+      {
+        path: "/customer/notifications",
+        element: <CustomerNotificationsPage />,
+      },
+      {
+        path: "/customer/profile",
+        element: <CustomerProfilePage />,
       },
     ],
   },
