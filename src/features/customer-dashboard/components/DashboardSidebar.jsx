@@ -7,11 +7,11 @@ import {
   FiBell,
   FiUser,
   FiLogOut,
-  FiMenu,
   FiX
 } from "react-icons/fi";
 import { useState } from "react";
 import Logo from "../../../common/Logo";
+import { DASHBOARD_MENU_ITEMS } from "../constants/menuItems";
 
 const DashboardSidebar = ({ isMobileOpen, onClose }) => {
   const navigate = useNavigate();
@@ -20,15 +20,6 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
   // Get user name from localStorage or default
   const userName = localStorage.getItem("name") || "Customer";
   const userEmail = localStorage.getItem("email") || "";
-
-  const menuItems = [
-    { path: "/customer/dashboard", label: "Dashboard", icon: FiHome },
-    { path: "/customer/orders", label: "My Orders", icon: FiPackage },
-    { path: "/customer/addresses", label: "Addresses", icon: FiMapPin },
-    { path: "/customer/reviews", label: "My Reviews", icon: FiStar },
-    { path: "/customer/notifications", label: "Notifications", icon: FiBell },
-    { path: "/customer/profile", label: "Profile & Settings", icon: FiUser },
-  ];
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -100,7 +91,7 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
           {/* Navigation Menu */}
           <nav className="flex-1 overflow-y-auto p-4">
             <div className="space-y-1">
-              {menuItems.map((item) => {
+              {DASHBOARD_MENU_ITEMS.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink

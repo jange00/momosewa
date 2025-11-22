@@ -1,7 +1,6 @@
-import Card from "../../../ui/cards/Card";
-import Button from "../../../ui/buttons/Button";
-import Badge from "../../../ui/badges/Badge";
-import { FiClock, FiPackage, FiArrowRight } from "react-icons/fi";
+import Card from "./Card";
+import Button from "../buttons/Button";
+import { FiClock } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 const RecentOrderCard = ({ order }) => {

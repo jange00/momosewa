@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import Card from "../../../ui/cards/Card";
+import Card from "./Card";
 
 const QuickActionCard = ({ icon: Icon, title, description, to, onClick, className = "" }) => {
   const content = (

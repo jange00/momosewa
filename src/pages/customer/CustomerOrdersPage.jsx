@@ -1,20 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { FiClock, FiPackage, FiTruck, FiCheckCircle, FiXCircle } from "react-icons/fi";
-import RecentOrderCard from "../../features/dashboard/components/RecentOrderCard";
-import Card from "../../ui/cards/Card";
-import Badge from "../../ui/badges/Badge";
-import Button from "../../ui/buttons/Button";
-import EmptyState from "../../ui/empty/EmptyState";
-
-const ORDER_TABS = [
-  { id: "all", label: "All Orders", icon: FiPackage },
-  { id: "pending", label: "Pending", icon: FiClock },
-  { id: "preparing", label: "Preparing", icon: FiPackage },
-  { id: "on-the-way", label: "On the Way", icon: FiTruck },
-  { id: "delivered", label: "Delivered", icon: FiCheckCircle },
-  { id: "cancelled", label: "Cancelled", icon: FiXCircle },
-];
+import { useState, useMemo } from "react";
+import OrdersHeader from "../../features/customer-dashboard/components/OrdersHeader";
+import OrdersTabs from "../../features/customer-dashboard/components/OrdersTabs";
+import OrdersGrid from "../../features/customer-dashboard/components/OrdersGrid";
+import OrdersStats from "../../features/customer-dashboard/components/OrdersStats";
 
 // Mock data - replace with actual API calls
 const mockOrders = [
@@ -87,108 +75,45 @@ const mockOrders = [
 const CustomerOrdersPage = () => {
   const [activeTab, setActiveTab] = useState("all");
 
-  const filteredOrders =
-    activeTab === "all"
+  const filteredOrders = useMemo(() => {
+    return activeTab === "all"
       ? mockOrders
       : mockOrders.filter((order) => order.status === activeTab);
+  }, [activeTab]);
+
+  const ordersCount = useMemo(() => {
+    const counts = {
+      total: mockOrders.length,
+      pending: 0,
+      preparing: 0,
+      "on-the-way": 0,
+      delivered: 0,
+      cancelled: 0,
+    };
+
+    mockOrders.forEach((order) => {
+      if (counts.hasOwnProperty(order.status)) {
+        counts[order.status]++;
+      }
+    });
+
+    return counts;
+  }, []);
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-black text-charcoal-grey mb-2">
-            My Orders
-          </h1>
-          <p className="text-charcoal-grey/70">
-            View and manage all your orders
-          </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-          {ORDER_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const count =
-              tab.id === "all"
-                ? mockOrders.length
-                : mockOrders.filter((order) => order.status === tab.id).length;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 whitespace-nowrap ${
-                  isActive
-                    ? "bg-gradient-to-r from-deep-maroon to-[#7a2533] text-white shadow-lg"
-                    : "bg-white/60 backdrop-blur-sm text-charcoal-grey/70 hover:bg-charcoal-grey/5 hover:text-deep-maroon border border-charcoal-grey/10"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-                {count > 0 && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-deep-maroon/10 text-deep-maroon"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Orders List */}
-        {filteredOrders.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredOrders.map((order) => (
-              <RecentOrderCard key={order.id} order={order} />
-            ))}
-          </div>
-        ) : (
-          <Card className="p-12">
-            <EmptyState
-              onClearFilters={() => setActiveTab("all")}
-            />
-            <div className="text-center mt-6">
-              <p className="text-charcoal-grey/60 mb-4">No orders found in this category</p>
-              <Link to="/menu">
-                <Button variant="primary" size="md">
-                  Order Now
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        )}
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-          <Card className="p-4 text-center">
-            <p className="text-sm text-charcoal-grey/60 mb-1">Total Orders</p>
-            <p className="text-2xl font-black text-charcoal-grey">{mockOrders.length}</p>
-          </Card>
-          <Card className="p-4 text-center">
-            <p className="text-sm text-charcoal-grey/60 mb-1">Active Orders</p>
-            <p className="text-2xl font-black text-deep-maroon">
-              {mockOrders.filter((o) => ["pending", "preparing", "on-the-way"].includes(o.status)).length}
-            </p>
-          </Card>
-          <Card className="p-4 text-center">
-            <p className="text-sm text-charcoal-grey/60 mb-1">Completed Orders</p>
-            <p className="text-2xl font-black text-green-600">
-              {mockOrders.filter((o) => o.status === "delivered").length}
-            </p>
-          </Card>
-        </div>
+        <OrdersHeader />
+        <OrdersTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          ordersCount={ordersCount}
+        />
+        <OrdersGrid orders={filteredOrders} />
+        <OrdersStats orders={mockOrders} />
       </div>
     </div>
   );
 };
 
 export default CustomerOrdersPage;
-

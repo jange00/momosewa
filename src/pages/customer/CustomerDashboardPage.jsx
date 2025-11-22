@@ -1,11 +1,8 @@
-import { FiPackage, FiTrendingUp, FiDollarSign } from "react-icons/fi";
-import { FiShoppingBag, FiMapPin } from "react-icons/fi";
-import StatCard from "../../features/dashboard/components/StatCard";
-import QuickActionCard from "../../features/dashboard/components/QuickActionCard";
-import RecentOrderCard from "../../features/dashboard/components/RecentOrderCard";
-import Card from "../../ui/cards/Card";
-import Button from "../../ui/buttons/Button";
-import { Link } from "react-router-dom";
+import DashboardWelcome from "../../features/customer-dashboard/components/DashboardWelcome";
+import DashboardStats from "../../features/customer-dashboard/components/DashboardStats";
+import DashboardQuickActions from "../../features/customer-dashboard/components/DashboardQuickActions";
+import DashboardRecentOrders from "../../features/customer-dashboard/components/DashboardRecentOrders";
+import DashboardOffers from "../../features/customer-dashboard/components/DashboardOffers";
 
 // Mock data - replace with actual API calls
 const mockStats = {
@@ -51,123 +48,19 @@ const mockRecentOrders = [
 ];
 
 const CustomerDashboardPage = () => {
-  // Get user name from localStorage
   const userName = localStorage.getItem("name") || "Customer";
-
-  // Get greeting based on time
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    return "Good Evening";
-  };
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Welcome Section */}
-        <div className="space-y-2">
-          <h1 className="text-3xl lg:text-4xl font-black text-charcoal-grey">
-            {getGreeting()}, {userName.split(" ")[0]}! 👋
-          </h1>
-          <p className="text-charcoal-grey/70 text-lg">
-            Welcome back to your MomoSewa dashboard
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StatCard
-            title="Total Orders"
-            value={mockStats.totalOrders}
-            trend={12}
-            icon={FiPackage}
-          />
-          <StatCard
-            title="Active Orders"
-            value={mockStats.activeOrders}
-            icon={FiShoppingBag}
-          />
-          <StatCard
-            title="Total Spent"
-            value={`Rs. ${mockStats.totalSpent.toLocaleString()}`}
-            trend={8}
-            icon={FiDollarSign}
-          />
-        </div>
-
-        {/* Quick Actions */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-charcoal-grey">Quick Actions</h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <QuickActionCard
-              icon={FiShoppingBag}
-              title="Order Now"
-              description="Browse menu"
-              to="/menu"
-            />
-            <QuickActionCard
-              icon={FiPackage}
-              title="Track Order"
-              description="View active orders"
-              to="/customer/orders"
-            />
-            <QuickActionCard
-              icon={FiMapPin}
-              title="Addresses"
-              description="Manage addresses"
-              to="/customer/addresses"
-            />
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-charcoal-grey">Recent Orders</h2>
-            <Link to="/customer/orders">
-              <Button variant="ghost" size="sm">
-                View All
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {mockRecentOrders.map((order) => (
-              <RecentOrderCard key={order.id} order={order} />
-            ))}
-          </div>
-        </div>
-
-        {/* Recommendations / Offers */}
-        <div>
-          <h2 className="text-2xl font-black text-charcoal-grey mb-6">
-            Special Offers
-          </h2>
-          <Card className="p-6 bg-gradient-to-r from-deep-maroon/10 via-golden-amber/10 to-deep-maroon/10 border-2 border-golden-amber/30">
-            <div className="flex items-center gap-4">
-              <div className="text-5xl">🎉</div>
-              <div className="flex-1">
-                <h3 className="font-bold text-charcoal-grey text-lg mb-1">
-                  Weekend Special Discount!
-                </h3>
-                <p className="text-charcoal-grey/70 mb-3">
-                  Get 15% off on all orders above Rs. 500. Use code: WEEKEND15
-                </p>
-                <Link to="/menu">
-                  <Button variant="primary" size="sm">
-                    Order Now
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <DashboardWelcome userName={userName} />
+        <DashboardStats stats={mockStats} />
+        <DashboardQuickActions />
+        <DashboardRecentOrders orders={mockRecentOrders} />
+        <DashboardOffers />
       </div>
     </div>
   );
 };
 
 export default CustomerDashboardPage;
-

@@ -1,8 +1,8 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useState } from "react";
 import Navbar from "../features/navbar/components/Navbar";
-import DashboardSidebar from "../features/dashboard/components/DashboardSidebar";
-import DashboardHeader from "../features/dashboard/components/DashboardHeader";
+import DashboardSidebar from "../features/customer-dashboard/components/DashboardSidebar";
+import DashboardHeader from "../features/customer-dashboard/components/DashboardHeader";
 
 const DASHBOARD_ROUTES = [
   "/customer/dashboard",

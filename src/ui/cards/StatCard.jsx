@@ -1,4 +1,4 @@
-import Card from "../../../ui/cards/Card";
+import Card from "./Card";
 import { FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 
 const StatCard = ({ title, value, trend, icon: Icon, className = "" }) => {

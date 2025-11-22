@@ -3,7 +3,7 @@ import { FiMenu, FiBell, FiSearch } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 const DashboardHeader = ({ onMenuClick }) => {
-  const [notificationCount] = useState(3); // Mock data - replace with actual state
+  const [notificationCount] = useState(3); // TODO: Replace with actual API call
 
   return (
     <header className="sticky top-0 z-30 bg-white/98 backdrop-blur-xl border-b border-charcoal-grey/10 shadow-sm">
