@@ -31,6 +31,14 @@ const mockAddresses = [
 const CustomerAddressesPage = () => {
   const [addresses, setAddresses] = useState(mockAddresses);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({
+    label: "",
+    address: "",
+    city: "",
+    area: "",
+    landmark: "",
+  });
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: "",
@@ -60,6 +68,58 @@ const CustomerAddressesPage = () => {
         isDefault: addr.id === id,
       }))
     );
+    toast.success("Default address updated");
+  };
+
+  const handleEdit = (address) => {
+    setEditingId(address.id);
+    setFormData({
+      label: address.label,
+      address: address.address,
+      city: address.city,
+      area: address.area,
+      landmark: address.landmark || "",
+    });
+    setIsAdding(false);
+  };
+
+  const handleSaveAddress = () => {
+    if (!formData.label || !formData.address || !formData.city) {
+      toast.error("Please fill in at least label, address, and city");
+      return;
+    }
+
+    if (editingId) {
+      // Update existing address
+      setAddresses(
+        addresses.map((addr) =>
+          addr.id === editingId
+            ? { ...addr, ...formData }
+            : addr
+        )
+      );
+      toast.success("Address updated successfully");
+    } else {
+      // Add new address
+      const newAddress = {
+        id: Date.now(),
+        ...formData,
+        isDefault: addresses.length === 0,
+      };
+      setAddresses([...addresses, newAddress]);
+      toast.success("Address added successfully");
+    }
+
+    // Reset form
+    setFormData({ label: "", address: "", city: "", area: "", landmark: "" });
+    setIsAdding(false);
+    setEditingId(null);
+  };
+
+  const handleCancel = () => {
+    setFormData({ label: "", address: "", city: "", area: "", landmark: "" });
+    setIsAdding(false);
+    setEditingId(null);
   };
 
   return (
@@ -85,23 +145,83 @@ const CustomerAddressesPage = () => {
           </Button>
         </div>
 
-        {/* Add Address Form */}
-        {isAdding && (
+        {/* Add/Edit Address Form */}
+        {(isAdding || editingId) && (
           <Card className="p-6">
-            <h2 className="text-xl font-bold text-charcoal-grey mb-4">Add New Address</h2>
+            <h2 className="text-xl font-bold text-charcoal-grey mb-4">
+              {editingId ? "Edit Address" : "Add New Address"}
+            </h2>
             <div className="space-y-4">
-              <MapLocationPicker />
-              <Button variant="primary" size="md" className="w-full">
-                Save Address
-              </Button>
-              <Button
-                variant="ghost"
-                size="md"
-                className="w-full"
-                onClick={() => setIsAdding(false)}
-              >
-                Cancel
-              </Button>
+              <div>
+                <label className="block text-sm font-semibold text-charcoal-grey mb-2">
+                  Label (e.g., Home, Office)
+                </label>
+                <input
+                  type="text"
+                  value={formData.label}
+                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                  placeholder="Home, Office, Work..."
+                  className="w-full px-4 py-2 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-charcoal-grey mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Street address"
+                  className="w-full px-4 py-2 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-white text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-charcoal-grey mb-2">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Kathmandu"
+                    className="w-full px-4 py-2 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-charcoal-grey mb-2">
+                    Area
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.area}
+                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                    placeholder="Thamel"
+                    className="w-full px-4 py-2 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-white text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-charcoal-grey mb-2">
+                  Landmark (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.landmark}
+                  onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
+                  placeholder="Near ABC Mall"
+                  className="w-full px-4 py-2 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-white text-sm"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button variant="primary" size="md" className="flex-1" onClick={handleSaveAddress}>
+                  {editingId ? "Update Address" : "Save Address"}
+                </Button>
+                <Button variant="ghost" size="md" className="flex-1" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           </Card>
         )}
@@ -143,7 +263,7 @@ const CustomerAddressesPage = () => {
                     Set Default
                   </Button>
                 )}
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => handleEdit(address)}>
                   <FiEdit className="w-4 h-4" />
                   Edit
                 </Button>

@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { FiBell, FiCheck } from "react-icons/fi";
+import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
 
@@ -31,6 +33,51 @@ const mockNotifications = [
 ];
 
 const CustomerNotificationsPage = () => {
+  const [notifications, setNotifications] = useState(mockNotifications);
+
+  const handleMarkAsRead = (id) => {
+    const updatedNotifications = notifications.map((n) =>
+      n.id === id ? { ...n, isRead: true } : n
+    );
+    
+    setNotifications(updatedNotifications);
+    toast.success("Notification marked as read");
+    
+    // Save to localStorage
+    localStorage.setItem("customerNotifications", JSON.stringify(updatedNotifications));
+    
+    // Trigger event for header update
+    window.dispatchEvent(new Event("customerNotificationsUpdated"));
+  };
+
+  const handleMarkAllAsRead = () => {
+    const updatedNotifications = notifications.map((n) => ({ ...n, isRead: true }));
+    
+    setNotifications(updatedNotifications);
+    toast.success("All notifications marked as read");
+    
+    // Save to localStorage
+    localStorage.setItem("customerNotifications", JSON.stringify(updatedNotifications));
+    
+    // Trigger event for header update
+    window.dispatchEvent(new Event("customerNotificationsUpdated"));
+  };
+
+  // Initialize from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("customerNotifications");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setNotifications(parsed);
+      } catch (e) {
+        // Keep mock data if parse fails
+      }
+    } else {
+      localStorage.setItem("customerNotifications", JSON.stringify(mockNotifications));
+    }
+  }, []);
+
   return (
     <div className="min-h-screen p-6 lg:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
@@ -44,14 +91,18 @@ const CustomerNotificationsPage = () => {
               Stay updated with your orders and offers
             </p>
           </div>
-          <button className="px-4 py-2 rounded-xl bg-charcoal-grey/5 text-charcoal-grey/70 hover:bg-charcoal-grey/10 font-semibold text-sm transition-all duration-200">
+          <button
+            onClick={handleMarkAllAsRead}
+            disabled={notifications.every((n) => n.isRead)}
+            className="px-4 py-2 rounded-xl bg-charcoal-grey/5 text-charcoal-grey/70 hover:bg-charcoal-grey/10 font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Mark all as read
           </button>
         </div>
 
         {/* Notifications List */}
         <div className="space-y-3">
-          {mockNotifications.map((notification) => (
+          {notifications.map((notification) => (
             <Card
               key={notification.id}
               className={`p-5 ${
@@ -74,15 +125,20 @@ const CustomerNotificationsPage = () => {
                   <p className="text-charcoal-grey/70 mb-2">{notification.message}</p>
                   <p className="text-sm text-charcoal-grey/60">{notification.date}</p>
                 </div>
-                <button className="p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/60 flex-shrink-0">
-                  <FiCheck className="w-5 h-5" />
-                </button>
+                {!notification.isRead && (
+                  <button
+                    onClick={() => handleMarkAsRead(notification.id)}
+                    className="p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/60 flex-shrink-0 transition-colors"
+                  >
+                    <FiCheck className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </Card>
           ))}
         </div>
 
-        {mockNotifications.length === 0 && (
+        {notifications.length === 0 && (
           <Card className="p-12">
             <div className="text-center">
               <div className="text-6xl mb-4">🔔</div>

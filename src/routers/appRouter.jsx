@@ -21,6 +21,7 @@ import CheckoutPage from "../pages/CheckoutPage";
 // Customer Dashboard Pages
 import CustomerDashboardPage from "../pages/customer/CustomerDashboardPage";
 import CustomerOrdersPage from "../pages/customer/CustomerOrdersPage";
+import CustomerOrderDetailPage from "../pages/customer/CustomerOrderDetailPage";
 import CustomerAddressesPage from "../pages/customer/CustomerAddressesPage";
 import CustomerReviewsPage from "../pages/customer/CustomerReviewsPage";
 import CustomerNotificationsPage from "../pages/customer/CustomerNotificationsPage";
@@ -113,6 +114,10 @@ export const router = createBrowserRouter([
       {
         path: "/customer/orders",
         element: <CustomerOrdersPage />,
+      },
+      {
+        path: "/customer/orders/:id",
+        element: <CustomerOrderDetailPage />,
       },
       {
         path: "/customer/addresses",

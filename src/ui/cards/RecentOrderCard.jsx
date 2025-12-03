@@ -79,8 +79,8 @@ const RecentOrderCard = ({ order, basePath = "/customer/orders" }) => {
             size="sm"
             className="flex-1"
             onClick={() => {
-              // Handle reorder logic
-              console.log("Reorder:", order.id);
+              // Navigate to order detail page where reorder confirmation will be shown
+              window.location.href = `${basePath}/${order.id}`;
             }}
           >
             Reorder
