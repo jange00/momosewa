@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { FiPlus, FiEdit, FiTrash2, FiPackage, FiX, FiSave, FiGrid, FiList, FiEye, FiEyeOff, FiExternalLink, FiSearch } from "react-icons/fi";
+import { FiPlus, FiEdit, FiTrash2, FiPackage, FiX, FiSave, FiGrid, FiList, FiEye, FiEyeOff, FiExternalLink, FiSearch, FiImage, FiUpload, FiLink } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
@@ -83,7 +83,14 @@ const VendorProductsPage = () => {
     category: "Momo",
     stock: "",
     image: "🥟",
+    imageUrl: "",
   });
+  const [newProductImageFile, setNewProductImageFile] = useState(null);
+  const [newProductImagePreview, setNewProductImagePreview] = useState(null);
+  const [editingProductImageFile, setEditingProductImageFile] = useState(null);
+  const [editingProductImagePreview, setEditingProductImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -171,11 +178,67 @@ const VendorProductsPage = () => {
     });
   };
 
+  const handleImageChange = (file, isEdit = false) => {
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size must be less than 5MB");
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEdit) {
+          setEditingProductImagePreview(reader.result);
+          setEditingProductImageFile(file);
+        } else {
+          setNewProductImagePreview(reader.result);
+          setNewProductImageFile(file);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUrlChange = (url, isEdit = false) => {
+    if (isEdit) {
+      setEditingProduct({ ...editingProduct, imageUrl: url, image: url });
+      setEditingProductImagePreview(url);
+      setEditingProductImageFile(null);
+    } else {
+      setNewProduct({ ...newProduct, imageUrl: url, image: url });
+      setNewProductImagePreview(url);
+      setNewProductImageFile(null);
+    }
+  };
+
+  const handleRemoveImage = (isEdit = false) => {
+    if (isEdit) {
+      setEditingProductImagePreview(null);
+      setEditingProductImageFile(null);
+      setEditingProduct({ ...editingProduct, imageUrl: "", image: "🥟" });
+    } else {
+      setNewProductImagePreview(null);
+      setNewProductImageFile(null);
+      setNewProduct({ ...newProduct, imageUrl: "", image: "🥟" });
+    }
+  };
+
   const handleAddProduct = () => {
     if (!newProduct.name || !newProduct.price || !newProduct.stock) {
       toast.error("Please fill in all required fields");
       return;
     }
+
+    // Determine image value - prefer preview (file or URL), fallback to emoji
+    const imageValue = newProductImagePreview || newProduct.imageUrl || (newProduct.image && newProduct.image !== "🥟" ? newProduct.image : "🥟") || "🥟";
 
     const product = {
       id: Date.now(),
@@ -185,7 +248,8 @@ const VendorProductsPage = () => {
       category: newProduct.category,
       stock: parseInt(newProduct.stock),
       isAvailable: true,
-      image: newProduct.image,
+      image: imageValue,
+      imageUrl: newProduct.imageUrl || "",
     };
 
     setProducts([...products, product]);
@@ -196,8 +260,18 @@ const VendorProductsPage = () => {
       category: "Momo",
       stock: "",
       image: "🥟",
+      imageUrl: "",
     });
+    setNewProductImageFile(null);
+    setNewProductImagePreview(null);
     setIsAdding(false);
+    
+    // TODO: Upload image file to server if newProductImageFile exists
+    if (newProductImageFile) {
+      // await uploadImageToServer(newProductImageFile);
+      console.log("Image file ready for upload:", newProductImageFile);
+    }
+    
     toast.success(`"${product.name}" added successfully`);
   };
 
@@ -211,7 +285,18 @@ const VendorProductsPage = () => {
       category: product.category,
       stock: product.stock.toString(),
       image: product.image,
+      imageUrl: product.imageUrl || product.image || "",
     });
+    
+    // Set image preview if product has an image URL
+    if (product.image && product.image.startsWith("http")) {
+      setEditingProductImagePreview(product.image);
+    } else if (product.imageUrl) {
+      setEditingProductImagePreview(product.imageUrl);
+    } else {
+      setEditingProductImagePreview(null);
+    }
+    setEditingProductImageFile(null);
   };
 
   const handleEditChange = (field, value) => {
@@ -227,6 +312,9 @@ const VendorProductsPage = () => {
       return;
     }
 
+    // Determine image value - prefer preview (file or URL), fallback to emoji
+    const imageValue = editingProductImagePreview || editingProduct.imageUrl || editingProduct.image || "🥟";
+
     setProducts(
       products.map((product) =>
         product.id === id
@@ -237,19 +325,31 @@ const VendorProductsPage = () => {
               price: parseFloat(editingProduct.price),
               category: editingProduct.category,
               stock: parseInt(editingProduct.stock),
-              image: editingProduct.image,
+              image: imageValue,
+              imageUrl: editingProduct.imageUrl || "",
             }
           : product
       )
     );
+    
+    // TODO: Upload image file to server if editingProductImageFile exists
+    if (editingProductImageFile) {
+      // await uploadImageToServer(editingProductImageFile);
+      console.log("Image file ready for upload:", editingProductImageFile);
+    }
+    
     setEditingId(null);
     setEditingProduct(null);
+    setEditingProductImageFile(null);
+    setEditingProductImagePreview(null);
     toast.success("Product updated successfully");
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditingProduct(null);
+    setEditingProductImageFile(null);
+    setEditingProductImagePreview(null);
   };
 
   const handleCancel = () => {
@@ -262,7 +362,10 @@ const VendorProductsPage = () => {
       category: "Momo",
       stock: "",
       image: "🥟",
+      imageUrl: "",
     });
+    setNewProductImageFile(null);
+    setNewProductImagePreview(null);
   };
 
   return (
@@ -364,6 +467,82 @@ const VendorProductsPage = () => {
                 placeholder="Momo"
               />
             </div>
+
+            {/* Image Upload Section */}
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-charcoal-grey mb-3">
+                Product Image
+              </label>
+              <div className="space-y-4">
+                {/* Image Preview */}
+                {newProductImagePreview && (
+                  <div className="relative inline-block">
+                    <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-charcoal-grey/10">
+                      <img
+                        src={newProductImagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(false)}
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                      title="Remove image"
+                    >
+                      <FiX className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload Options */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* File Upload */}
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(e.target.files[0], false)}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full"
+                    >
+                      <FiUpload className="w-5 h-5" />
+                      Upload Image
+                    </Button>
+                  </div>
+
+                  {/* Or Divider */}
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm text-charcoal-grey/60 font-medium">OR</span>
+                  </div>
+
+                  {/* URL Input */}
+                  <div className="flex-1">
+                    <Input
+                      label="Image URL"
+                      type="url"
+                      value={newProduct.imageUrl}
+                      onChange={(e) => handleImageUrlChange(e.target.value, false)}
+                      placeholder="https://example.com/image.jpg"
+                      icon={FiLink}
+                    />
+                  </div>
+                </div>
+
+                {/* Info */}
+                <p className="text-xs text-charcoal-grey/60">
+                  Upload an image file (JPG, PNG, GIF) or enter an image URL. Max file size: 5MB.
+                </p>
+              </div>
+            </div>
+
             <div className="flex gap-3 mt-6">
               <Button variant="primary" onClick={handleAddProduct}>
                 <FiSave className="w-4 h-4" />
@@ -575,7 +754,17 @@ const VendorProductsPage = () => {
             <Card key={product.id} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="text-4xl">{product.image}</div>
+                  <div className="w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex-shrink-0 border border-charcoal-grey/10">
+                    {product.imageUrl || (product.image && (product.image.startsWith("http") || product.image.startsWith("data:"))) ? (
+                      <img
+                        src={product.imageUrl || product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl">{product.image || "🥟"}</span>
+                    )}
+                  </div>
                   <div>
                     <h3 className="font-bold text-charcoal-grey text-lg">
                       {product.name}
@@ -666,6 +855,82 @@ const VendorProductsPage = () => {
                       placeholder="Momo"
                     />
                   </div>
+
+                  {/* Image Upload Section for Edit */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-semibold text-charcoal-grey mb-3">
+                      Product Image
+                    </label>
+                    <div className="space-y-4">
+                      {/* Image Preview */}
+                      {editingProductImagePreview && (
+                        <div className="relative inline-block">
+                          <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-charcoal-grey/10">
+                            <img
+                              src={editingProductImagePreview}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(true)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                            title="Remove image"
+                          >
+                            <FiX className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Upload Options */}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        {/* File Upload */}
+                        <div className="flex-1">
+                          <input
+                            ref={editFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageChange(e.target.files[0], true)}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="md"
+                            onClick={() => editFileInputRef.current?.click()}
+                            className="w-full"
+                          >
+                            <FiUpload className="w-5 h-5" />
+                            Upload Image
+                          </Button>
+                        </div>
+
+                        {/* Or Divider */}
+                        <div className="flex items-center justify-center">
+                          <span className="text-sm text-charcoal-grey/60 font-medium">OR</span>
+                        </div>
+
+                        {/* URL Input */}
+                        <div className="flex-1">
+                          <Input
+                            label="Image URL"
+                            type="url"
+                            value={editingProduct?.imageUrl || ""}
+                            onChange={(e) => handleImageUrlChange(e.target.value, true)}
+                            placeholder="https://example.com/image.jpg"
+                            icon={FiLink}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Info */}
+                      <p className="text-xs text-charcoal-grey/60">
+                        Upload an image file (JPG, PNG, GIF) or enter an image URL. Max file size: 5MB.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <Button 
                       variant="primary" 
@@ -753,7 +1018,17 @@ const VendorProductsPage = () => {
                   {productsByCategory[category].map((product) => (
                     <Card key={product.id} className="p-6 hover:shadow-xl transition-all duration-300">
                       <div className="flex items-start gap-4 mb-4">
-                        <div className="text-5xl flex-shrink-0">{product.image}</div>
+                        <div className="w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex-shrink-0 border border-charcoal-grey/10">
+                          {product.imageUrl || (product.image && (product.image.startsWith("http") || product.image.startsWith("data:"))) ? (
+                            <img
+                              src={product.imageUrl || product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-3xl">{product.image || "🥟"}</span>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h3 className="font-bold text-charcoal-grey text-lg leading-tight">
