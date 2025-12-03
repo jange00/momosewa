@@ -375,6 +375,41 @@ const VendorOrderDetailPage = () => {
           </Card>
         )}
 
+        {/* Completed Order Summary - Show for delivered orders */}
+        {order.status === "delivered" && (
+          <Card className="p-6 bg-gradient-to-br from-green-50/50 to-white border-2 border-green-200/50">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <FiCheck className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-charcoal-grey">Order Completed Successfully</h2>
+                  <p className="text-sm text-charcoal-grey/60">
+                    This order has been delivered and completed
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <div className="p-4 rounded-xl bg-white/60">
+                <p className="text-sm text-charcoal-grey/60 mb-1">Order Value</p>
+                <p className="text-lg font-bold text-deep-maroon">Rs. {order.total.toFixed(2)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-white/60">
+                <p className="text-sm text-charcoal-grey/60 mb-1">Items Ordered</p>
+                <p className="text-lg font-bold text-charcoal-grey">{order.itemsCount} items</p>
+              </div>
+              {order.deliveredDate && (
+                <div className="p-4 rounded-xl bg-white/60">
+                  <p className="text-sm text-charcoal-grey/60 mb-1">Delivered On</p>
+                  <p className="text-lg font-bold text-charcoal-grey">{order.deliveredDate.split(" - ")[0]}</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Order Items & Details */}
           <div className="lg:col-span-2 space-y-6">
