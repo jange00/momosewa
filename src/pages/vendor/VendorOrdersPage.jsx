@@ -1,9 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { FiSearch, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import OrdersHeader from "../../features/vendor-dashboard/components/OrdersHeader";
 import OrdersTabs from "../../features/vendor-dashboard/components/OrdersTabs";
 import OrdersGrid from "../../features/vendor-dashboard/components/OrdersGrid";
 import OrdersStats from "../../features/vendor-dashboard/components/OrdersStats";
+import Card from "../../ui/cards/Card";
 
 // Mock data - replace with actual API calls
 // Vendor-focused: includes customer information and delivery details
@@ -105,8 +108,19 @@ const initialOrders = [
 ];
 
 const VendorOrdersPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState(initialOrders);
   const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+
+  // Sync search query with URL
+  useEffect(() => {
+    if (searchQuery) {
+      setSearchParams({ search: searchQuery }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchQuery, setSearchParams]);
 
   // Handle order status updates
   const handleStatusUpdate = (orderId, newStatus) => {
@@ -140,10 +154,27 @@ const VendorOrdersPage = () => {
   };
 
   const filteredOrders = useMemo(() => {
-    return activeTab === "all"
+    let filtered = activeTab === "all"
       ? orders
       : orders.filter((order) => order.status === activeTab);
-  }, [activeTab, orders]);
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((order) => {
+        const matchesId = order.id.toLowerCase().includes(query);
+        const matchesCustomerName = order.customer?.name?.toLowerCase().includes(query);
+        const matchesPhone = order.customer?.phone?.includes(query);
+        const matchesAddress = order.customer?.address?.toLowerCase().includes(query);
+        const matchesItems = order.items?.some((item) => 
+          item.name.toLowerCase().includes(query)
+        );
+        return matchesId || matchesCustomerName || matchesPhone || matchesAddress || matchesItems;
+      });
+    }
+
+    return filtered;
+  }, [activeTab, orders, searchQuery]);
 
   const ordersCount = useMemo(() => {
     const counts = {
@@ -168,6 +199,36 @@ const VendorOrdersPage = () => {
     <div className="min-h-screen p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <OrdersHeader />
+        
+        {/* Search Bar */}
+        <Card className="p-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+              <FiSearch className="w-5 h-5 text-charcoal-grey/35" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by order ID, customer name, phone, or items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-12 py-3 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-charcoal-grey/2 hover:bg-charcoal-grey/4 transition-all duration-300 placeholder:text-charcoal-grey/30 text-sm font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-charcoal-grey/60 hover:text-charcoal-grey transition-colors"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-charcoal-grey/60 mt-2">
+              Found {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""} matching "{searchQuery}"
+            </p>
+          )}
+        </Card>
+
         <OrdersTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}

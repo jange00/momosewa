@@ -20,6 +20,7 @@ import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import Badge from "../../ui/badges/Badge";
+import ConfirmDialog from "../../ui/modals/ConfirmDialog";
 
 // Mock order data - replace with actual API call
 const mockOrders = [
@@ -157,6 +158,13 @@ const VendorOrderDetailPage = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    variant: "danger",
+  });
 
   useEffect(() => {
     // Simulate API call
@@ -186,14 +194,6 @@ const VendorOrderDetailPage = () => {
   };
 
   const handleStatusUpdate = (newStatus) => {
-    if (newStatus === "cancelled") {
-      if (!window.confirm(`Are you sure you want to cancel order #${order.id}? This action cannot be undone.`)) {
-        return;
-      }
-    }
-
-    setOrder({ ...order, status: newStatus });
-
     const statusMessages = {
       pending: "Order marked as pending",
       preparing: "Order accepted! Start preparing now.",
@@ -202,7 +202,40 @@ const VendorOrderDetailPage = () => {
       cancelled: "Order cancelled",
     };
 
+    if (newStatus === "cancelled") {
+      setConfirmDialog({
+        isOpen: true,
+        title: "Cancel Order",
+        message: `Are you sure you want to cancel order #${order.id}? This action cannot be undone.`,
+        onConfirm: () => {
+          setOrder({ ...order, status: newStatus });
+          toast.success(statusMessages[newStatus] || `Order status updated to ${newStatus}`);
+          
+          // TODO: Replace with actual API call
+          // try {
+          //   await api.put(`/orders/${order.id}/status`, { status: newStatus });
+          // } catch (error) {
+          //   toast.error("Failed to update order status");
+          //   // Revert on error
+          //   setOrder(mockOrders.find((o) => o.id === id));
+          // }
+        },
+        variant: "danger",
+      });
+      return;
+    }
+
+    setOrder({ ...order, status: newStatus });
     toast.success(statusMessages[newStatus] || `Order status updated to ${newStatus}`);
+
+    // TODO: Replace with actual API call
+    // try {
+    //   await api.put(`/orders/${order.id}/status`, { status: newStatus });
+    // } catch (error) {
+    //   toast.error("Failed to update order status");
+    //   // Revert on error
+    //   setOrder(mockOrders.find((o) => o.id === id));
+    // }
 
     // TODO: Replace with actual API call
     // try {
@@ -626,6 +659,18 @@ const VendorOrderDetailPage = () => {
             )}
           </div>
         </div>
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm || (() => {})}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText="Confirm"
+          cancelText="Cancel"
+          variant={confirmDialog.variant}
+        />
       </div>
     </div>
   );

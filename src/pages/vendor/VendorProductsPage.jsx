@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
-import { FiPlus, FiEdit, FiTrash2, FiPackage, FiX, FiSave, FiGrid, FiList, FiEye, FiEyeOff, FiExternalLink } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { FiPlus, FiEdit, FiTrash2, FiPackage, FiX, FiSave, FiGrid, FiList, FiEye, FiEyeOff, FiExternalLink, FiSearch } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import Badge from "../../ui/badges/Badge";
 import Input from "../../ui/inputs/Input";
+import ConfirmDialog from "../../ui/modals/ConfirmDialog";
 
 // Mock products - replace with actual API call
 const mockProducts = [
@@ -52,11 +53,29 @@ const mockProducts = [
 ];
 
 const VendorProductsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState(mockProducts);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); // "grid" or "menu"
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
+
+  // Sync search and category with URL
+  useEffect(() => {
+    const params = {};
+    if (searchQuery) params.search = searchQuery;
+    if (selectedCategory !== "all") params.category = selectedCategory;
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, selectedCategory, setSearchParams]);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    variant: "danger",
+  });
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
@@ -66,17 +85,46 @@ const VendorProductsPage = () => {
     image: "🥟",
   });
 
-  // Group products by category for menu view
+  // Get unique categories
+  const categories = useMemo(() => {
+    const uniqueCategories = [...new Set(products.map((p) => p.category))];
+    return uniqueCategories.sort();
+  }, [products]);
+
+  // Filter products based on search and category
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((p) => p.category === selectedCategory);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((product) => {
+        const matchesName = product.name.toLowerCase().includes(query);
+        const matchesDescription = product.description?.toLowerCase().includes(query);
+        const matchesCategory = product.category.toLowerCase().includes(query);
+        return matchesName || matchesDescription || matchesCategory;
+      });
+    }
+
+    return filtered;
+  }, [products, searchQuery, selectedCategory]);
+
+  // Group filtered products by category for menu view
   const productsByCategory = useMemo(() => {
     const grouped = {};
-    products.forEach((product) => {
+    filteredProducts.forEach((product) => {
       if (!grouped[product.category]) {
         grouped[product.category] = [];
       }
       grouped[product.category].push(product);
     });
     return grouped;
-  }, [products]);
+  }, [filteredProducts]);
 
   // Calculate menu visibility stats
   const menuStats = useMemo(() => {
@@ -111,10 +159,16 @@ const VendorProductsPage = () => {
 
   const handleDelete = (id) => {
     const product = products.find((p) => p.id === id);
-    if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
-      setProducts(products.filter((product) => product.id !== id));
-      toast.success(`"${product.name}" deleted successfully`);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Product",
+      message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
+      onConfirm: () => {
+        setProducts(products.filter((product) => product.id !== id));
+        toast.success(`"${product.name}" deleted successfully`);
+      },
+      variant: "danger",
+    });
   };
 
   const handleAddProduct = () => {
@@ -384,6 +438,62 @@ const VendorProductsPage = () => {
           </Card>
         </div>
 
+        {/* Search and Filter Bar */}
+        <Card className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                <FiSearch className="w-5 h-5 text-charcoal-grey/35" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search products by name, description, or category..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-12 py-3 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-charcoal-grey/2 hover:bg-charcoal-grey/4 transition-all duration-300 placeholder:text-charcoal-grey/30 text-sm font-medium"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-charcoal-grey/60 hover:text-charcoal-grey transition-colors"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+            {/* Category Filter */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-3 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-charcoal-grey/2 hover:bg-charcoal-grey/4 transition-all duration-300 text-sm font-medium min-w-[150px]"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+          {(searchQuery || selectedCategory !== "all") && (
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-charcoal-grey/10">
+              <p className="text-sm text-charcoal-grey/60">
+                Showing {filteredProducts.length} of {products.length} product{products.length !== 1 ? "s" : ""}
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                }}
+                className="text-sm text-deep-maroon hover:text-deep-maroon/80 font-semibold"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
+        </Card>
+
         {/* Menu Preview Link */}
         <Card className="p-4 bg-gradient-to-r from-deep-maroon/5 via-golden-amber/5 to-deep-maroon/5 border-2 border-deep-maroon/20">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -438,7 +548,30 @@ const VendorProductsPage = () => {
         {/* Products Grid View */}
         {viewMode === "grid" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
+            {filteredProducts.length === 0 ? (
+              <div className="col-span-full">
+                <Card className="p-12">
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-xl font-bold text-charcoal-grey mb-2">
+                      No products found
+                    </h3>
+                    <p className="text-charcoal-grey/60 mb-6">
+                      {searchQuery || selectedCategory !== "all"
+                        ? "Try adjusting your search or filters"
+                        : "Add your first product to get started"}
+                    </p>
+                    {(!searchQuery && selectedCategory === "all") && (
+                      <Button variant="primary" size="md" onClick={() => setIsAdding(true)}>
+                        <FiPlus className="w-5 h-5" />
+                        Add Product
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              filteredProducts.map((product) => (
             <Card key={product.id} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -582,14 +715,36 @@ const VendorProductsPage = () => {
                 </div>
               )}
             </Card>
-          ))}
+              ))
+            )}
           </div>
         )}
 
         {/* Menu View */}
         {viewMode === "menu" && (
           <div className="space-y-8">
-            {Object.keys(productsByCategory).map((category) => (
+            {Object.keys(productsByCategory).length === 0 ? (
+              <Card className="p-12">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🔍</div>
+                  <h3 className="text-xl font-bold text-charcoal-grey mb-2">
+                    No products found
+                  </h3>
+                  <p className="text-charcoal-grey/60 mb-6">
+                    {searchQuery || selectedCategory !== "all"
+                      ? "Try adjusting your search or filters"
+                      : "Add your first product to get started"}
+                  </p>
+                  {(!searchQuery && selectedCategory === "all") && (
+                    <Button variant="primary" size="md" onClick={() => setIsAdding(true)}>
+                      <FiPlus className="w-5 h-5" />
+                      Add Product
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              Object.keys(productsByCategory).map((category) => (
               <div key={category}>
                 <h2 className="text-2xl font-black text-charcoal-grey mb-6 pb-2 border-b-2 border-deep-maroon/20">
                   {category}
@@ -655,7 +810,8 @@ const VendorProductsPage = () => {
                   ))}
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         )}
 
@@ -676,6 +832,18 @@ const VendorProductsPage = () => {
             </div>
           </Card>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm || (() => {})}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText="Confirm"
+          cancelText="Cancel"
+          variant={confirmDialog.variant}
+        />
       </div>
     </div>
   );

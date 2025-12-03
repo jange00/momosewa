@@ -1,11 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiMenu, FiBell, FiSearch, FiX } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const DashboardHeader = ({ onMenuClick }) => {
-  const [notificationCount] = useState(5); // TODO: Replace with actual API call
+  const location = useLocation();
+  const [notificationCount, setNotificationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+  // Calculate notification count from localStorage or mock data
+  useEffect(() => {
+    // In a real app, this would be an API call
+    // For now, get from localStorage or calculate from mock data
+    const storedNotifications = localStorage.getItem("vendorNotifications");
+    if (storedNotifications) {
+      try {
+        const notifications = JSON.parse(storedNotifications);
+        const unreadCount = notifications.filter((n) => !n.isRead).length;
+        setNotificationCount(unreadCount);
+      } catch (e) {
+        // Fallback to mock count
+        setNotificationCount(2);
+      }
+    } else {
+      // Use mock data count
+      const mockNotifications = [
+        { id: 1, isRead: false },
+        { id: 2, isRead: false },
+        { id: 3, isRead: true },
+        { id: 4, isRead: true },
+      ];
+      const unreadCount = mockNotifications.filter((n) => !n.isRead).length;
+      setNotificationCount(unreadCount);
+    }
+
+    // Listen for storage changes to update count
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem("vendorNotifications");
+      if (stored) {
+        try {
+          const notifications = JSON.parse(stored);
+          const unreadCount = notifications.filter((n) => !n.isRead).length;
+          setNotificationCount(unreadCount);
+        } catch (e) {
+          setNotificationCount(2);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    // Also listen for custom event from notifications page
+    window.addEventListener("vendorNotificationsUpdated", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("vendorNotificationsUpdated", handleStorageChange);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 bg-white/98 backdrop-blur-xl border-b border-charcoal-grey/10 shadow-sm">
@@ -28,9 +79,28 @@ const DashboardHeader = ({ onMenuClick }) => {
               </div>
               <input
                 type="text"
-                placeholder="Search orders, products..."
+                placeholder={
+                  location.pathname.includes("/orders") 
+                    ? "Search orders..." 
+                    : location.pathname.includes("/products")
+                    ? "Search products..."
+                    : "Search orders, products..."
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchQuery.trim()) {
+                    // Navigate to appropriate page with search
+                    if (location.pathname.includes("/orders")) {
+                      // Search is handled in the orders page
+                    } else if (location.pathname.includes("/products")) {
+                      // Search is handled in the products page
+                    } else {
+                      // Default: navigate to orders page
+                      window.location.href = `/vendor/orders?search=${encodeURIComponent(searchQuery)}`;
+                    }
+                  }
+                }}
                 className="w-full pl-12 pr-5 py-2.5 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-charcoal-grey/2 hover:bg-charcoal-grey/4 transition-all duration-300 placeholder:text-charcoal-grey/30 text-sm font-medium"
               />
             </div>

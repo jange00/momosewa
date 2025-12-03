@@ -1,9 +1,18 @@
+import { useState } from "react";
 import Card from "../../../ui/cards/Card";
 import Button from "../../../ui/buttons/Button";
+import ConfirmDialog from "../../../ui/modals/ConfirmDialog";
 import { FiClock, FiUser, FiPhone, FiMapPin, FiCheck, FiX, FiPackage, FiTruck } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 const VendorOrderCard = ({ order, onStatusUpdate }) => {
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    variant: "danger",
+  });
   const statusColors = {
     pending: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200" },
     preparing: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
@@ -25,9 +34,18 @@ const VendorOrderCard = ({ order, onStatusUpdate }) => {
 
   const handleStatusUpdate = (newStatus) => {
     if (newStatus === "cancelled") {
-      if (!window.confirm(`Are you sure you want to cancel order #${order.id}? This action cannot be undone.`)) {
-        return;
-      }
+      setConfirmDialog({
+        isOpen: true,
+        title: "Cancel Order",
+        message: `Are you sure you want to cancel order #${order.id}? This action cannot be undone.`,
+        onConfirm: () => {
+          if (onStatusUpdate) {
+            onStatusUpdate(order.id, newStatus);
+          }
+        },
+        variant: "danger",
+      });
+      return;
     }
     if (onStatusUpdate) {
       onStatusUpdate(order.id, newStatus);
@@ -189,6 +207,18 @@ const VendorOrderCard = ({ order, onStatusUpdate }) => {
           </Link>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={confirmDialog.onConfirm || (() => {})}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText="Confirm"
+        cancelText="Cancel"
+        variant={confirmDialog.variant}
+      />
     </Card>
   );
 };

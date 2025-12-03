@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiBell, FiCheck } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
@@ -44,11 +44,17 @@ const VendorNotificationsPage = () => {
   const [notifications, setNotifications] = useState(initialNotifications);
 
   const handleMarkAsRead = (id) => {
-    setNotifications(
-      notifications.map((notification) =>
-        notification.id === id ? { ...notification, isRead: true } : notification
-      )
+    const updated = notifications.map((notification) =>
+      notification.id === id ? { ...notification, isRead: true } : notification
     );
+    setNotifications(updated);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem("vendorNotifications", JSON.stringify(updated));
+    
+    // Trigger custom event to update header count
+    window.dispatchEvent(new Event("vendorNotificationsUpdated"));
+    
     toast.success("Notification marked as read");
     
     // TODO: Replace with actual API call
@@ -58,6 +64,22 @@ const VendorNotificationsPage = () => {
     //   toast.error("Failed to update notification");
     // }
   };
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("vendorNotifications");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setNotifications(parsed);
+      } catch (e) {
+        // Keep initial notifications if parse fails
+      }
+    } else {
+      // Save initial notifications to localStorage
+      localStorage.setItem("vendorNotifications", JSON.stringify(initialNotifications));
+    }
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
