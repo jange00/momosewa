@@ -1,4 +1,4 @@
-import { FiTrendingUp, FiDollarSign, FiPackage, FiUsers } from "react-icons/fi";
+import { FiTrendingUp, FiBarChart2, FiPackage, FiUsers } from "react-icons/fi";
 import Card from "../../ui/cards/Card";
 import StatCard from "../../ui/cards/StatCard";
 
@@ -34,7 +34,7 @@ const VendorAnalyticsPage = () => {
             title="Total Revenue"
             value={`Rs. ${mockAnalytics.totalRevenue.toLocaleString()}`}
             trend={mockAnalytics.revenueTrend}
-            icon={FiDollarSign}
+            icon={FiBarChart2}
           />
           <StatCard
             title="Total Orders"

@@ -1,4 +1,4 @@
-import { FiPackage, FiDollarSign, FiShoppingBag, FiTrendingUp } from "react-icons/fi";
+import { FiPackage, FiTrendingUp, FiShoppingBag, FiBarChart2 } from "react-icons/fi";
 import StatCard from "../../../ui/cards/StatCard";
 
 const DashboardStats = ({ stats }) => {
@@ -19,7 +19,7 @@ const DashboardStats = ({ stats }) => {
         title="Total Revenue"
         value={`Rs. ${stats.totalRevenue.toLocaleString()}`}
         trend={stats.revenueTrend}
-        icon={FiDollarSign}
+        icon={FiBarChart2}
       />
       <StatCard
         title="Today's Revenue"
