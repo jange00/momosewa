@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import toast from "react-hot-toast";
 import { FiX, FiSliders } from "react-icons/fi";
 import ProductCard from "../features/menu/components/ProductCard";
 import CategoryFilter from "../features/menu/components/CategoryFilter";
@@ -190,7 +191,7 @@ const MenuPage = () => {
   const handleAddToCart = (product) => {
     // TODO: Implement add to cart functionality
     console.log("Add to cart:", product);
-    alert(`${product.name} added to cart!`);
+    toast.success(`${product.name} added to cart!`);
   };
 
   const clearAllFilters = () => {

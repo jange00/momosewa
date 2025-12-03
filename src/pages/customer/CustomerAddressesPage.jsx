@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { FiMapPin, FiEdit, FiTrash2, FiPlus, FiCheck } from "react-icons/fi";
+import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
+import ConfirmDialog from "../../ui/modals/ConfirmDialog";
 import MapLocationPicker from "../../features/checkout/components/MapLocationPicker";
 
 // Mock addresses - replace with actual API call
@@ -29,11 +31,26 @@ const mockAddresses = [
 const CustomerAddressesPage = () => {
   const [addresses, setAddresses] = useState(mockAddresses);
   const [isAdding, setIsAdding] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    variant: "danger",
+  });
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this address?")) {
-      setAddresses(addresses.filter((addr) => addr.id !== id));
-    }
+    const address = addresses.find((addr) => addr.id === id);
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Address",
+      message: `Are you sure you want to delete "${address?.label || 'this address'}"? This action cannot be undone.`,
+      onConfirm: () => {
+        setAddresses(addresses.filter((addr) => addr.id !== id));
+        toast.success("Address deleted successfully");
+      },
+      variant: "danger",
+    });
   };
 
   const handleSetDefault = (id) => {
@@ -163,6 +180,18 @@ const CustomerAddressesPage = () => {
             </div>
           </Card>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm || (() => {})}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant={confirmDialog.variant}
+        />
       </div>
     </div>
   );

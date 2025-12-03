@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FiMapPin, FiCheck, FiTrash2, FiPlus, FiX } from "react-icons/fi";
+import toast from "react-hot-toast";
 import Button from "../../../ui/buttons/Button";
 
 const STORAGE_KEY = "momosewa_saved_addresses";
@@ -39,18 +40,22 @@ const SavedAddresses = ({ onSelectAddress, selectedAddressId, currentFormData })
 
   const handleDelete = (addressId, e) => {
     e.stopPropagation();
-    const updated = savedAddresses.filter((addr) => addr.id !== addressId);
-    saveAddresses(updated);
+    const address = savedAddresses.find((addr) => addr.id === addressId);
+    if (address) {
+      const updated = savedAddresses.filter((addr) => addr.id !== addressId);
+      saveAddresses(updated);
+      toast.success(`${address.label} address deleted`);
+    }
   };
 
   const handleSaveCurrent = (currentFormData) => {
     if (!currentFormData.fullName || !currentFormData.address || !currentFormData.city) {
-      alert("Please fill in at least name, address, and city to save this address");
+      toast.error("Please fill in at least name, address, and city to save this address");
       return;
     }
 
     if (!newAddressLabel.trim()) {
-      alert("Please enter a label for this address (e.g., Home, Office)");
+      toast.error("Please enter a label for this address (e.g., Home, Office)");
       return;
     }
 
@@ -72,6 +77,7 @@ const SavedAddresses = ({ onSelectAddress, selectedAddressId, currentFormData })
     saveAddresses(updated);
     setNewAddressLabel("");
     setShowAddForm(false);
+    toast.success("Address saved successfully!");
   };
 
   if (savedAddresses.length === 0 && !showAddForm) {

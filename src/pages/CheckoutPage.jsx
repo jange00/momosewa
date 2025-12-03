@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { FiArrowLeft, FiCheckCircle } from "react-icons/fi";
 import DeliveryForm from "../features/checkout/components/DeliveryForm";
 import PaymentMethod from "../features/checkout/components/PaymentMethod";
@@ -67,12 +68,12 @@ const CheckoutPage = () => {
   const handlePlaceOrder = async () => {
     // Validate form
     if (!deliveryForm.fullName || !deliveryForm.phone || !deliveryForm.address || !deliveryForm.city || !deliveryForm.area) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
     if (!paymentMethod) {
-      alert("Please select a payment method");
+      toast.error("Please select a payment method");
       return;
     }
 
@@ -85,7 +86,7 @@ const CheckoutPage = () => {
 
     // In real app, navigate to order confirmation page
     // For now, show success message
-    alert("Order placed successfully! You will be redirected to order confirmation.");
+    toast.success("Order placed successfully! You will be redirected to order confirmation.");
     // navigate("/order-confirmation");
   };
 
