@@ -16,7 +16,7 @@ const DASHBOARD_ROUTES = [
 const CustomerLayout = () => {
   const { pathname } = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isDashboardRoute = DASHBOARD_ROUTES.some((route) => pathname.startsWith(route));
+  const isDashboardRoute = DASHBOARD_ROUTES.some((route) => pathname.startsWith(route)) || pathname.startsWith("/customer/orders/");
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
