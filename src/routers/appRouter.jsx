@@ -29,6 +29,7 @@ import CustomerProfilePage from "../pages/customer/CustomerProfilePage";
 // Vendor Dashboard Pages
 import VendorDashboardPage from "../pages/vendor/VendorDashboardPage";
 import VendorOrdersPage from "../pages/vendor/VendorOrdersPage";
+import VendorOrderDetailPage from "../pages/vendor/VendorOrderDetailPage";
 import VendorProductsPage from "../pages/vendor/VendorProductsPage";
 import VendorAnalyticsPage from "../pages/vendor/VendorAnalyticsPage";
 import VendorNotificationsPage from "../pages/vendor/VendorNotificationsPage";
@@ -146,6 +147,10 @@ export const router = createBrowserRouter([
       {
         path: "/vendor/orders",
         element: <VendorOrdersPage />,
+      },
+      {
+        path: "/vendor/orders/:id",
+        element: <VendorOrderDetailPage />,
       },
       {
         path: "/vendor/products",

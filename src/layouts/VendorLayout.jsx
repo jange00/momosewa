@@ -4,7 +4,7 @@ import Navbar from "../features/navbar/components/Navbar";
 import DashboardSidebar from "../features/vendor-dashboard/components/DashboardSidebar";
 import DashboardHeader from "../features/vendor-dashboard/components/DashboardHeader";
 
-const DASHBOARD_ROUTES = [
+const VENDOR_DASHBOARD_ROUTES = [
   "/vendor/dashboard",
   "/vendor/orders",
   "/vendor/products",
@@ -17,7 +17,8 @@ const DASHBOARD_ROUTES = [
 const VendorLayout = () => {
   const { pathname } = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isDashboardRoute = DASHBOARD_ROUTES.some((route) => pathname.startsWith(route));
+  // Include order detail pages in dashboard layout
+  const isDashboardRoute = VENDOR_DASHBOARD_ROUTES.some((route) => pathname.startsWith(route)) || pathname.startsWith("/vendor/orders/");
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
