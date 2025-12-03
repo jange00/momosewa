@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { FiUser, FiShoppingBag, FiShield } from "react-icons/fi";
-import { IMAGE_PATHS } from "../common/imageConstant";
 import { USER_ROLES, ROLE_DESCRIPTIONS } from "../common/roleConstants";
+import Logo from "../common/Logo";
 import Footer from "../features/landing/components/Footer";
 
 const RoleSelectionPage = () => {
@@ -50,11 +50,7 @@ const RoleSelectionPage = () => {
           {/* Header Section */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
-              <img 
-                src={IMAGE_PATHS.LOGO} 
-                alt="MomoSewa Logo" 
-                className="w-20 h-20 object-contain"
-              />
+              <Logo size="large" />
             </div>
             <h1 className="text-3xl lg:text-4xl font-black text-charcoal-grey mb-3">
               Create Your Account

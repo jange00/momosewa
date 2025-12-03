@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FiMail, FiLock, FiPhone, FiUser } from "react-icons/fi";
-import { IMAGE_PATHS } from "../../../../common/imageConstant";
+import Logo from "../../../../common/Logo";
 import Input from "../../../../ui/inputs/Input";
 import Button from "../../../../ui/buttons/Button";
 
@@ -18,11 +18,7 @@ const CustomerSignupForm = ({
         {/* Header */}
         <div className="text-center mb-3">
           <div className="flex justify-center mb-2 lg:hidden">
-            <img 
-              src={IMAGE_PATHS.LOGO} 
-              alt="MomoSewa Logo" 
-              className="w-16 h-16 object-contain"
-            />
+            <Logo size="default" />
           </div>
           <h1 className="text-2xl lg:text-3xl font-black text-charcoal-grey mb-1.5">
             Customer Sign Up
