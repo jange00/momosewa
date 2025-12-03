@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { FiShoppingBag, FiArrowLeft } from "react-icons/fi";
 import CartItem from "../features/cart/components/CartItem";
@@ -77,7 +78,7 @@ const CartPage = () => {
       );
       setPromoDiscount((subtotal * discountPercent) / 100);
     } else {
-      alert("Invalid promo code. Try WELCOME10, MOMO20, or SAVE50");
+      toast.error("Invalid promo code. Try WELCOME10, MOMO20, or SAVE50");
     }
   };
 
