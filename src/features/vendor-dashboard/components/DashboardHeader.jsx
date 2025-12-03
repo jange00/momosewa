@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { FiMenu, FiBell, FiSearch } from "react-icons/fi";
+import { FiMenu, FiBell, FiSearch, FiX } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 const DashboardHeader = ({ onMenuClick }) => {
   const [notificationCount] = useState(5); // TODO: Replace with actual API call
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 bg-white/98 backdrop-blur-xl border-b border-charcoal-grey/10 shadow-sm">
@@ -27,17 +29,50 @@ const DashboardHeader = ({ onMenuClick }) => {
               <input
                 type="text"
                 placeholder="Search orders, products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-5 py-2.5 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-charcoal-grey/2 hover:bg-charcoal-grey/4 transition-all duration-300 placeholder:text-charcoal-grey/30 text-sm font-medium"
               />
             </div>
           </div>
         </div>
 
+        {/* Mobile Search Bar */}
+        {showMobileSearch && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-charcoal-grey/10 p-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                <FiSearch className="w-5 h-5 text-charcoal-grey/35" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search orders, products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-12 py-2.5 border border-charcoal-grey/12 rounded-xl focus:outline-none focus:ring-2 focus:ring-golden-amber/25 focus:border-golden-amber/35 text-charcoal-grey bg-charcoal-grey/2 text-sm font-medium"
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  setSearchQuery("");
+                }}
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-charcoal-grey/60 hover:text-charcoal-grey"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Right Section - Actions */}
         <div className="flex items-center gap-3">
           {/* Mobile Search Button */}
-          <button className="md:hidden p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/80 transition-all duration-200">
-            <FiSearch className="w-5 h-5" />
+          <button
+            onClick={() => setShowMobileSearch(!showMobileSearch)}
+            className="md:hidden p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/80 transition-all duration-200"
+          >
+            {showMobileSearch ? <FiX className="w-5 h-5" /> : <FiSearch className="w-5 h-5" />}
           </button>
 
           {/* Notifications */}

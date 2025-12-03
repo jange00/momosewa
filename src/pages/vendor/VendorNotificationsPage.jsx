@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { FiBell, FiCheck } from "react-icons/fi";
+import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
 
 // Mock notifications - replace with actual API call
-const mockNotifications = [
+const initialNotifications = [
   {
     id: 1,
     type: "order",
@@ -39,7 +41,25 @@ const mockNotifications = [
 ];
 
 const VendorNotificationsPage = () => {
-  const unreadCount = mockNotifications.filter((n) => !n.isRead).length;
+  const [notifications, setNotifications] = useState(initialNotifications);
+
+  const handleMarkAsRead = (id) => {
+    setNotifications(
+      notifications.map((notification) =>
+        notification.id === id ? { ...notification, isRead: true } : notification
+      )
+    );
+    toast.success("Notification marked as read");
+    
+    // TODO: Replace with actual API call
+    // try {
+    //   await api.put(`/notifications/${id}/read`);
+    // } catch (error) {
+    //   toast.error("Failed to update notification");
+    // }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -60,7 +80,7 @@ const VendorNotificationsPage = () => {
 
         {/* Notifications List */}
         <div className="space-y-4">
-          {mockNotifications.map((notification) => (
+          {notifications.map((notification) => (
             <Card
               key={notification.id}
               className={`p-6 ${!notification.isRead ? "border-l-4 border-l-deep-maroon" : ""}`}
@@ -89,7 +109,10 @@ const VendorNotificationsPage = () => {
                     </div>
                   </div>
                   {!notification.isRead && (
-                    <button className="text-sm text-deep-maroon hover:text-deep-maroon/80 flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      className="text-sm text-deep-maroon hover:text-deep-maroon/80 flex items-center gap-2 mt-2 transition-colors duration-200"
+                    >
                       <FiCheck className="w-4 h-4" />
                       Mark as read
                     </button>
@@ -100,7 +123,7 @@ const VendorNotificationsPage = () => {
           ))}
         </div>
 
-        {mockNotifications.length === 0 && (
+        {notifications.length === 0 && (
           <Card className="p-12">
             <div className="text-center">
               <div className="text-6xl mb-4">🔔</div>

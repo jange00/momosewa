@@ -19,7 +19,7 @@ const initialOrders = [
       { name: "Jhol Momo (10 pcs)", quantity: 1, price: 300, emoji: "🥟" },
     ],
     customer: {
-      name: "John Doe",
+      name: "Ram Bahadur",
       phone: "+977 9801234567",
       address: "123 Main Street, Thamel, Kathmandu 44600",
     },
@@ -35,7 +35,7 @@ const initialOrders = [
       { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
     ],
     customer: {
-      name: "Jane Smith",
+      name: "Sita Kumari",
       phone: "+977 9812345678",
       address: "456 Business Park, Durbar Marg, Kathmandu 44600",
     },
@@ -51,7 +51,7 @@ const initialOrders = [
       { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
     ],
     customer: {
-      name: "Raj Kumar",
+      name: "Hari Prasad",
       phone: "+977 9823456789",
       address: "789 Residential Area, New Baneshwor, Kathmandu 44600",
     },
@@ -66,7 +66,7 @@ const initialOrders = [
       { name: "Buff Momo (10 pcs)", quantity: 2, price: 580, emoji: "🥟" },
     ],
     customer: {
-      name: "Sarah Johnson",
+      name: "Sunita",
       phone: "+977 9834567890",
       address: "321 Shopping Complex, Lazimpat, Kathmandu 44600",
     },
@@ -81,7 +81,7 @@ const initialOrders = [
       { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
     ],
     customer: {
-      name: "Mike Chen",
+      name: "Anil",
       phone: "+977 9845678901",
       address: "555 Apartment Block, Patan, Lalitpur 44700",
     },
@@ -97,7 +97,7 @@ const initialOrders = [
       { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
     ],
     customer: {
-      name: "Lisa Wang",
+      name: "Priya",
       phone: "+977 9856789012",
       address: "999 Restaurant Street, Basantapur, Kathmandu 44600",
     },

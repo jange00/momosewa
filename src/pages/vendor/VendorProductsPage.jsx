@@ -54,6 +54,7 @@ const VendorProductsPage = () => {
   const [products, setProducts] = useState(mockProducts);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
@@ -117,17 +118,54 @@ const VendorProductsPage = () => {
   };
 
   const handleEdit = (id) => {
+    const product = products.find((p) => p.id === id);
     setEditingId(id);
+    setEditingProduct({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      category: product.category,
+      stock: product.stock.toString(),
+      image: product.image,
+    });
   };
 
-  const handleSaveEdit = (id, updatedProduct) => {
+  const handleEditChange = (field, value) => {
+    setEditingProduct((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSaveEdit = (id) => {
+    if (!editingProduct.name || !editingProduct.price || !editingProduct.stock) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     setProducts(
       products.map((product) =>
-        product.id === id ? { ...product, ...updatedProduct } : product
+        product.id === id
+          ? {
+              ...product,
+              name: editingProduct.name,
+              description: editingProduct.description,
+              price: parseFloat(editingProduct.price),
+              category: editingProduct.category,
+              stock: parseInt(editingProduct.stock),
+              image: editingProduct.image,
+            }
+          : product
       )
     );
     setEditingId(null);
+    setEditingProduct(null);
     toast.success("Product updated successfully");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingProduct(null);
   };
 
   const handleCancel = () => {
@@ -291,47 +329,90 @@ const VendorProductsPage = () => {
                 </Badge>
               </div>
 
-              <p className="text-charcoal-grey/70 text-sm mb-4">
-                {product.description}
-              </p>
+              {editingId !== product.id && (
+                <p className="text-charcoal-grey/70 text-sm mb-4">
+                  {product.description}
+                </p>
+              )}
 
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-charcoal-grey/10">
-                <div>
-                  <p className="text-sm text-charcoal-grey/60">Price</p>
-                  <p className="font-bold text-deep-maroon text-lg">
-                    Rs. {product.price}
-                  </p>
+              {editingId !== product.id && (
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-charcoal-grey/10">
+                  <div>
+                    <p className="text-sm text-charcoal-grey/60">Price</p>
+                    <p className="font-bold text-deep-maroon text-lg">
+                      Rs. {product.price}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-charcoal-grey/60">Stock</p>
+                    <p className="font-bold text-charcoal-grey">
+                      {product.stock} units
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-charcoal-grey/60">Stock</p>
-                  <p className="font-bold text-charcoal-grey">
-                    {product.stock} units
-                  </p>
-                </div>
-              </div>
+              )}
 
-              <div className="flex items-center gap-3">
-                {editingId === product.id ? (
-                  <>
+              {editingId === product.id ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Input
+                      label="Product Name *"
+                      type="text"
+                      value={editingProduct?.name || ""}
+                      onChange={(e) => handleEditChange("name", e.target.value)}
+                      placeholder="Product name"
+                    />
+                    <Input
+                      label="Price (Rs.) *"
+                      type="number"
+                      value={editingProduct?.price || ""}
+                      onChange={(e) => handleEditChange("price", e.target.value)}
+                      placeholder="250"
+                    />
+                    <Input
+                      label="Description"
+                      type="text"
+                      value={editingProduct?.description || ""}
+                      onChange={(e) => handleEditChange("description", e.target.value)}
+                      placeholder="Description"
+                    />
+                    <Input
+                      label="Stock *"
+                      type="number"
+                      value={editingProduct?.stock || ""}
+                      onChange={(e) => handleEditChange("stock", e.target.value)}
+                      placeholder="50"
+                    />
+                    <Input
+                      label="Category"
+                      type="text"
+                      value={editingProduct?.category || ""}
+                      onChange={(e) => handleEditChange("category", e.target.value)}
+                      placeholder="Momo"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
                     <Button 
                       variant="primary" 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => handleSaveEdit(product.id, product)}
+                      onClick={() => handleSaveEdit(product.id)}
                     >
                       <FiSave className="w-4 h-4" />
-                      Save
+                      Save Changes
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => setEditingId(null)}
+                      onClick={handleCancelEdit}
                     >
                       <FiX className="w-4 h-4" />
                       Cancel
                     </Button>
-                  </>
-                ) : (
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
                   <Button 
                     variant="secondary" 
                     size="sm" 
@@ -341,23 +422,23 @@ const VendorProductsPage = () => {
                     <FiEdit className="w-4 h-4" />
                     Edit
                   </Button>
-                )}
-                <Button
-                  variant={product.isAvailable ? "ghost" : "secondary"}
-                  size="sm"
-                  onClick={() => handleToggleAvailability(product.id)}
-                >
-                  {product.isAvailable ? "Disable" : "Enable"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(product.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <FiTrash2 className="w-4 h-4" />
-                </Button>
-              </div>
+                  <Button
+                    variant={product.isAvailable ? "ghost" : "secondary"}
+                    size="sm"
+                    onClick={() => handleToggleAvailability(product.id)}
+                  >
+                    {product.isAvailable ? "Disable" : "Enable"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(product.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </Card>
           ))}
         </div>

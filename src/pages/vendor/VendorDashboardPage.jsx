@@ -29,7 +29,7 @@ const mockRecentOrders = [
       { name: "Jhol Momo (10 pcs)", quantity: 1, price: 300, emoji: "🥟" },
     ],
     customer: {
-      name: "John Doe",
+      name: "Ram Bahadur",
       phone: "+977 9801234567",
       address: "123 Main Street, Thamel, Kathmandu 44600",
     },
@@ -45,7 +45,7 @@ const mockRecentOrders = [
       { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
     ],
     customer: {
-      name: "Jane Smith",
+      name: "Sita Kumari",
       phone: "+977 9812345678",
       address: "456 Business Park, Durbar Marg, Kathmandu 44600",
     },
@@ -61,7 +61,7 @@ const mockRecentOrders = [
       { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
     ],
     customer: {
-      name: "Raj Kumar",
+      name: "Hari Prasad",
       phone: "+977 9823456789",
       address: "789 Residential Area, New Baneshwor, Kathmandu 44600",
     },

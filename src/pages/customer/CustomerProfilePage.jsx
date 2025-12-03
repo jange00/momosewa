@@ -7,8 +7,8 @@ import Input from "../../ui/inputs/Input";
 const CustomerProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: localStorage.getItem("name") || "John Doe",
-    email: localStorage.getItem("email") || "john@example.com",
+    name: localStorage.getItem("name") || "Ram Bahadur",
+    email: localStorage.getItem("email") || "ram@example.com",
     phone: localStorage.getItem("phone") || "+977 9800000000",
   });
 

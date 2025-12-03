@@ -1,4 +1,4 @@
-import { FiCreditCard, FiSmartphone, FiWallet, FiLock } from "react-icons/fi";
+import { FiCreditCard, FiSmartphone, FiShoppingBag, FiLock } from "react-icons/fi";
 
 const PaymentMethod = ({ selectedMethod, onSelect }) => {
   const paymentMethods = [
@@ -12,7 +12,7 @@ const PaymentMethod = ({ selectedMethod, onSelect }) => {
     {
       id: "cash",
       name: "Cash on Delivery",
-      icon: FiWallet,
+      icon: FiShoppingBag,
       description: "Pay when you receive",
       color: "from-green-500 to-green-600",
     },
