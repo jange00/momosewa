@@ -3,7 +3,7 @@ import Button from "../buttons/Button";
 import { FiClock } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
-const RecentOrderCard = ({ order }) => {
+const RecentOrderCard = ({ order, basePath = "/customer/orders" }) => {
   const statusColors = {
     pending: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200" },
     preparing: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
@@ -68,7 +68,7 @@ const RecentOrderCard = ({ order }) => {
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4 border-t border-charcoal-grey/10">
-        <Link to={`/customer/orders/${order.id}`} className="flex-1">
+        <Link to={`${basePath}/${order.id}`} className="flex-1">
           <Button variant="secondary" size="sm" className="w-full">
             View Details
           </Button>

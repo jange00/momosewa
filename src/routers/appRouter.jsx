@@ -26,13 +26,14 @@ import CustomerReviewsPage from "../pages/customer/CustomerReviewsPage";
 import CustomerNotificationsPage from "../pages/customer/CustomerNotificationsPage";
 import CustomerProfilePage from "../pages/customer/CustomerProfilePage";
 
-
-const VendorDashboard = () => (
-  <div className="p-8">
-    <h1 className="text-3xl font-bold">Vendor Dashboard</h1>
-    <p className="mt-4 text-gray-600">Welcome to your vendor dashboard!</p>
-  </div>
-);
+// Vendor Dashboard Pages
+import VendorDashboardPage from "../pages/vendor/VendorDashboardPage";
+import VendorOrdersPage from "../pages/vendor/VendorOrdersPage";
+import VendorProductsPage from "../pages/vendor/VendorProductsPage";
+import VendorAnalyticsPage from "../pages/vendor/VendorAnalyticsPage";
+import VendorNotificationsPage from "../pages/vendor/VendorNotificationsPage";
+import VendorSettingsPage from "../pages/vendor/VendorSettingsPage";
+import VendorProfilePage from "../pages/vendor/VendorProfilePage";
 
 const AdminDashboard = () => (
   <div className="p-8">
@@ -140,7 +141,31 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/vendor/dashboard",
-        element: <VendorDashboard />,
+        element: <VendorDashboardPage />,
+      },
+      {
+        path: "/vendor/orders",
+        element: <VendorOrdersPage />,
+      },
+      {
+        path: "/vendor/products",
+        element: <VendorProductsPage />,
+      },
+      {
+        path: "/vendor/analytics",
+        element: <VendorAnalyticsPage />,
+      },
+      {
+        path: "/vendor/notifications",
+        element: <VendorNotificationsPage />,
+      },
+      {
+        path: "/vendor/settings",
+        element: <VendorSettingsPage />,
+      },
+      {
+        path: "/vendor/profile",
+        element: <VendorProfilePage />,
       },
     ],
   },

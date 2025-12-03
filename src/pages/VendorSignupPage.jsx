@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
+import toast from "react-hot-toast";
 import VendorSignupPromo from "../features/auth/components/signup/VendorSignupPromo";
 import VendorSignupForm from "../features/auth/components/signup/VendorSignupForm";
 import Footer from "../features/landing/components/Footer";
 import { USER_ROLES, ROLE_DASHBOARD_ROUTES } from "../common/roleConstants";
+import { saveVendorData } from "../utils/vendorData";
 
 const VendorSignupPage = () => {
   const navigate = useNavigate();
@@ -93,24 +95,53 @@ const VendorSignupPage = () => {
     // Simulate API call
     setTimeout(() => {
       console.log("Vendor signup attempt:", formData);
-      // Save role to localStorage (in real app, this would come from API response)
-      localStorage.setItem("role", USER_ROLES.VENDOR);
+      
+      // Save all vendor details to localStorage
+      // In real app, this would come from API response
+      saveVendorData({
+        role: USER_ROLES.VENDOR,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        businessName: formData.businessName,
+        businessAddress: formData.businessAddress,
+        businessLicense: formData.businessLicense || "",
+        storeName: formData.businessName, // Use business name as default store name
+        vendorId: `VENDOR-${Date.now()}`, // Generate temporary ID
+      });
+      
       setIsLoading(false);
+      toast.success("Vendor account created successfully! Redirecting to login...");
+      
       // Navigate to login (vendor accounts need admin approval)
-      navigate("/login");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
     }, 1000);
   };
 
   const handleGoogleSignup = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       console.log("Google vendor signup success:", tokenResponse);
-      // In real app, send token to backend with role
-      localStorage.setItem("role", USER_ROLES.VENDOR);
+      
+      // In real app, send token to backend with role and get vendor details
+      // For now, save basic vendor data
+      saveVendorData({
+        role: USER_ROLES.VENDOR,
+        token: tokenResponse.access_token,
+        vendorId: `VENDOR-${Date.now()}`,
+      });
+      
+      toast.success("Google signup successful! Redirecting...");
+      
       // Navigate to vendor dashboard (or pending approval page)
-      navigate(ROLE_DASHBOARD_ROUTES[USER_ROLES.VENDOR]);
+      setTimeout(() => {
+        navigate(ROLE_DASHBOARD_ROUTES[USER_ROLES.VENDOR]);
+      }, 1000);
     },
     onError: () => {
       console.error("Google signup failed");
+      toast.error("Google signup failed. Please try again.");
     },
   });
 
