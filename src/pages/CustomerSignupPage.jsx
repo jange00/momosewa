@@ -80,21 +80,25 @@ const CustomerSignupPage = () => {
     // Simulate API call
     setTimeout(() => {
       console.log("Customer signup attempt:", formData);
-      // Save role to localStorage (in real app, this would come from API response)
+      // Save user data to localStorage (in real app, this would come from API response)
       localStorage.setItem("role", USER_ROLES.CUSTOMER);
+      localStorage.setItem("name", formData.name);
+      localStorage.setItem("email", formData.email);
       setIsLoading(false);
-      // Navigate to customer dashboard after successful signup
-      navigate("/login"); // Or navigate to ROLE_DASHBOARD_ROUTES[USER_ROLES.CUSTOMER]
+      // Navigate to landing page (navbar will show user menu)
+      navigate("/");
     }, 1000);
   };
 
   const handleGoogleSignup = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       console.log("Google customer signup success:", tokenResponse);
-      // In real app, send token to backend with role
+      // In real app, send token to backend with role and get user data
       localStorage.setItem("role", USER_ROLES.CUSTOMER);
-      // Navigate to customer dashboard
-      navigate(ROLE_DASHBOARD_ROUTES[USER_ROLES.CUSTOMER]);
+      // In real app, name and email would come from Google API response
+      // For now, use a default name if available
+      // Navigate to landing page (navbar will show user menu)
+      navigate("/");
     },
     onError: () => {
       console.error("Google signup failed");

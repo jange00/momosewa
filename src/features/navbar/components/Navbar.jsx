@@ -1,11 +1,35 @@
 import { FiSearch, FiShoppingCart, FiMenu, FiX } from "react-icons/fi";
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Logo from "../../../common/Logo";
+import UserMenuDropdown from "./UserMenuDropdown";
+import { USER_ROLES } from "../../../common/roleConstants";
+import { DASHBOARD_MENU_ITEMS } from "../../customer-dashboard/constants/menuItems";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState(localStorage.getItem("role"));
   const location = useLocation();
+
+  // Update user role when localStorage changes (for login/logout)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setUserRole(localStorage.getItem("role"));
+    };
+
+    // Listen for storage events (for cross-tab updates)
+    window.addEventListener("storage", handleStorageChange);
+
+    // Check on mount and when location changes (for same-tab updates)
+    setUserRole(localStorage.getItem("role"));
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [location.pathname]); // Re-check when route changes
+
+  // Check if user is logged in as customer
+  const isCustomerLoggedIn = userRole === USER_ROLES.CUSTOMER;
 
   const navLinks = [
     { path: "/", label: "Home" },
@@ -89,15 +113,19 @@ const Navbar = () => {
             {/* Divider */}
             <div className="hidden sm:block w-px h-8 bg-charcoal-grey/10"></div>
 
-            {/* Login Button - Premium */}
-            <Link
-              to="/login"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-deep-maroon via-[#7a2533] to-deep-maroon text-white font-semibold text-sm hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg relative overflow-hidden group"
-            >
-              <span className="relative z-10 tracking-wide">Login</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-golden-amber/25 via-transparent to-golden-amber/25 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </Link>
+            {/* User Menu Dropdown (if logged in) or Login Button (if not logged in) */}
+            {isCustomerLoggedIn ? (
+              <UserMenuDropdown />
+            ) : (
+              <Link
+                to="/login"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-deep-maroon via-[#7a2533] to-deep-maroon text-white font-semibold text-sm hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg relative overflow-hidden group"
+              >
+                <span className="relative z-10 tracking-wide">Login</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-golden-amber/25 via-transparent to-golden-amber/25 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </Link>
+            )}
 
             {/* Mobile Menu Button - Premium */}
             <button
@@ -132,6 +160,36 @@ const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
+
+              {/* Customer Dashboard Links - Mobile */}
+              {isCustomerLoggedIn && (
+                <>
+                  <div className="px-5 pt-3 pb-1">
+                    <p className="text-xs font-bold text-charcoal-grey/50 uppercase tracking-wider">
+                      My Account
+                    </p>
+                  </div>
+                  {DASHBOARD_MENU_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setIsMenuOpen(false)}
+                        className={`px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-3 ${
+                          isActive(item.path)
+                            ? "text-deep-maroon bg-deep-maroon/8"
+                            : "text-charcoal-grey/80 hover:text-deep-maroon hover:bg-charcoal-grey/5"
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
+
               {/* Mobile Search - Premium */}
               <div className="px-5 pt-3">
                 <div className="relative">
