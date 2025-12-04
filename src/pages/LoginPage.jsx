@@ -71,14 +71,45 @@ const LoginPage = () => {
       // localStorage.setItem('token', token);
       // localStorage.setItem('role', role);
       
+      // TEMPORARY: Hardcoded login credentials for testing
+      const email = formData.emailOrPhone.toLowerCase();
+      let userRole = null;
+      let userName = "";
+      
+      if (email === "customer@gmail.com") {
+        userRole = USER_ROLES.CUSTOMER;
+        userName = "Customer User";
+        localStorage.setItem("role", USER_ROLES.CUSTOMER);
+        localStorage.setItem("email", email);
+        localStorage.setItem("name", userName);
+        localStorage.setItem("token", "temp-customer-token");
+      } else if (email === "vendor@gmail.com") {
+        userRole = USER_ROLES.VENDOR;
+        userName = "Vendor User";
+        localStorage.setItem("role", USER_ROLES.VENDOR);
+        localStorage.setItem("email", email);
+        localStorage.setItem("name", userName);
+        localStorage.setItem("token", "temp-vendor-token");
+      } else if (email === "admin@gmail.com") {
+        userRole = USER_ROLES.ADMIN;
+        userName = "Admin User";
+        localStorage.setItem("role", USER_ROLES.ADMIN);
+        localStorage.setItem("email", email);
+        localStorage.setItem("name", userName);
+        localStorage.setItem("token", "temp-admin-token");
+      } else {
+        // Fallback to existing logic
+        userRole = localStorage.getItem("role");
+      }
+      
       // Get role from localStorage (in real app, this comes from API response)
-      const userRole = localStorage.getItem("role");
+      const finalUserRole = userRole || localStorage.getItem("role");
       const userEmail = localStorage.getItem("email");
       
       setIsLoading(false);
       
-      // Check vendor approval status
-      if (userRole === USER_ROLES.VENDOR && userEmail) {
+      // Check vendor approval status (skip for temporary vendor@gmail.com login)
+      if (finalUserRole === USER_ROLES.VENDOR && userEmail && email !== "vendor@gmail.com") {
         const vendorStatus = getVendorStatus(userEmail);
         
         if (vendorStatus === "pending") {
@@ -96,12 +127,37 @@ const LoginPage = () => {
         }
       }
       
+      // For temporary vendor@gmail.com, ensure they're approved
+      if (email === "vendor@gmail.com") {
+        // Check if vendor exists in approved list, if not add them
+        const vendorStatus = getVendorStatus(email);
+        if (vendorStatus !== "active") {
+          // Add to approved vendors for temporary access
+          const approvedVendors = JSON.parse(localStorage.getItem("approvedVendors") || "[]");
+          const existingVendor = approvedVendors.find(v => v.email === email);
+          if (!existingVendor) {
+            approvedVendors.push({
+              id: "VENDOR-TEMP-001",
+              role: USER_ROLES.VENDOR,
+              name: userName,
+              email: email,
+              phone: "+977 9800000000",
+              businessName: "Test Vendor Business",
+              businessAddress: "Test Address",
+              status: "active",
+              approvedDate: new Date().toISOString(),
+            });
+            localStorage.setItem("approvedVendors", JSON.stringify(approvedVendors));
+          }
+        }
+      }
+      
       // For customers, stay on landing page (navbar will show user menu)
       // For other roles, redirect to their dashboard
-      if (userRole === USER_ROLES.CUSTOMER) {
+      if (finalUserRole === USER_ROLES.CUSTOMER) {
         navigate("/"); // Stay on landing page
-      } else if (userRole && ROLE_DASHBOARD_ROUTES[userRole]) {
-        navigate(ROLE_DASHBOARD_ROUTES[userRole]);
+      } else if (finalUserRole && ROLE_DASHBOARD_ROUTES[finalUserRole]) {
+        navigate(ROLE_DASHBOARD_ROUTES[finalUserRole]);
       } else {
         // Default to landing page if no role is set
         navigate("/");
@@ -124,8 +180,8 @@ const LoginPage = () => {
       const userRole = localStorage.getItem("role");
       const userEmail = localStorage.getItem("email");
       
-      // Check vendor approval status
-      if (userRole === USER_ROLES.VENDOR && userEmail) {
+      // Check vendor approval status (skip for temporary vendor@gmail.com login)
+      if (userRole === USER_ROLES.VENDOR && userEmail && userEmail !== "vendor@gmail.com") {
         const vendorStatus = getVendorStatus(userEmail);
         
         if (vendorStatus === "pending") {
