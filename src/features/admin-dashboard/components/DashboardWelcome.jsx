@@ -7,12 +7,11 @@ const DashboardWelcome = ({ userName }) => {
         {getGreeting()}, {userName.split(" ")[0]}! 👋
       </h1>
       <p className="text-charcoal-grey/70 text-lg">
-        Welcome back to your MomoSewa vendor portal
+        Welcome back to your MomoSewa admin portal
       </p>
     </div>
   );
 };
 
 export default DashboardWelcome;
-
 

@@ -99,3 +99,4 @@ This feature follows the same design system as the customer dashboard:
 - **Components**: Uses shared UI components from `src/ui/`
 - **Layout**: Sidebar navigation with responsive header
 
+

@@ -37,12 +37,16 @@ import VendorNotificationsPage from "../pages/vendor/VendorNotificationsPage";
 import VendorSettingsPage from "../pages/vendor/VendorSettingsPage";
 import VendorProfilePage from "../pages/vendor/VendorProfilePage";
 
-const AdminDashboard = () => (
-  <div className="p-8">
-    <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-    <p className="mt-4 text-gray-600">Welcome to admin dashboard!</p>
-  </div>
-);
+// Admin Dashboard Pages
+import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import AdminOrdersPage from "../pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "../pages/admin/AdminOrderDetailPage";
+import AdminUsersPage from "../pages/admin/AdminUsersPage";
+import AdminVendorsPage from "../pages/admin/AdminVendorsPage";
+import AdminAnalyticsPage from "../pages/admin/AdminAnalyticsPage";
+import AdminNotificationsPage from "../pages/admin/AdminNotificationsPage";
+import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
+import AdminProfilePage from "../pages/admin/AdminProfilePage";
 
 export const router = createBrowserRouter([
   {
@@ -189,7 +193,39 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/admin/dashboard",
-        element: <AdminDashboard />,
+        element: <AdminDashboardPage />,
+      },
+      {
+        path: "/admin/orders",
+        element: <AdminOrdersPage />,
+      },
+      {
+        path: "/admin/orders/:id",
+        element: <AdminOrderDetailPage />,
+      },
+      {
+        path: "/admin/users",
+        element: <AdminUsersPage />,
+      },
+      {
+        path: "/admin/vendors",
+        element: <AdminVendorsPage />,
+      },
+      {
+        path: "/admin/analytics",
+        element: <AdminAnalyticsPage />,
+      },
+      {
+        path: "/admin/notifications",
+        element: <AdminNotificationsPage />,
+      },
+      {
+        path: "/admin/settings",
+        element: <AdminSettingsPage />,
+      },
+      {
+        path: "/admin/profile",
+        element: <AdminProfilePage />,
       },
     ],
   },

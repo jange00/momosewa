@@ -22,3 +22,4 @@ export const VENDOR_DASHBOARD_MENU_ITEMS = [
   { path: "/vendor/profile", label: "Profile", icon: FiUser },
 ];
 
+

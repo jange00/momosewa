@@ -39,4 +39,3 @@ export const getGreeting = () => {
   return "Good Evening";
 };
 
-

@@ -1,7 +1,6 @@
 import { FiClock, FiPackage, FiTruck, FiCheckCircle, FiXCircle } from "react-icons/fi";
 
 const ORDER_TABS = [
-  { id: "all", label: "All Orders", icon: FiPackage },
   { id: "pending", label: "Pending", icon: FiClock },
   { id: "preparing", label: "Preparing", icon: FiPackage },
   { id: "on-the-way", label: "On the Way", icon: FiTruck },
@@ -9,16 +8,13 @@ const ORDER_TABS = [
   { id: "cancelled", label: "Cancelled", icon: FiXCircle },
 ];
 
-const OrdersTabs = ({ activeTab, onTabChange, ordersCount }) => {
+const OrdersTabs = ({ selectedTab, onTabChange, ordersCount }) => {
   return (
     <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
       {ORDER_TABS.map((tab) => {
         const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
-        const count =
-          tab.id === "all"
-            ? ordersCount.total
-            : ordersCount[tab.id] || 0;
+        const isActive = selectedTab === tab.id;
+        const count = ordersCount?.[tab.id] || 0;
 
         return (
           <button
@@ -51,5 +47,4 @@ const OrdersTabs = ({ activeTab, onTabChange, ordersCount }) => {
 };
 
 export default OrdersTabs;
-
 
