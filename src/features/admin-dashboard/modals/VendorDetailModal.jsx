@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiX, FiShoppingBag, FiMail, FiPhone, FiCalendar, FiEdit2, FiSave, FiStar, FiCheck, FiXCircle } from "react-icons/fi";
 import Button from "../../../ui/buttons/Button";
 import Input from "../../../ui/inputs/Input";
@@ -13,6 +13,20 @@ const VendorDetailModal = ({ vendor, isOpen, onClose, onUpdate, onApprove, onRej
     phone: vendor?.phone || "",
     status: vendor?.status || "pending",
   });
+
+  // Update formData when vendor changes
+  useEffect(() => {
+    if (vendor) {
+      setFormData({
+        name: vendor.name || "",
+        businessName: vendor.businessName || "",
+        email: vendor.email || "",
+        phone: vendor.phone || "",
+        status: vendor.status || "pending",
+      });
+      setIsEditing(false); // Reset editing state when vendor changes
+    }
+  }, [vendor]);
 
   if (!isOpen || !vendor) return null;
 

@@ -84,19 +84,6 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Quick Action - Manage Platform Button */}
-          <div className="px-4 pb-4">
-            <NavLink
-              to="/admin/analytics"
-              onClick={() => onClose && onClose()}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-deep-maroon via-[#7a2533] to-deep-maroon text-white font-bold text-sm hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg relative overflow-hidden group"
-            >
-              <span className="text-lg">📊</span>
-              <span>Platform Analytics</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-golden-amber/25 via-transparent to-golden-amber/25 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </NavLink>
-          </div>
-
           {/* Navigation Menu */}
           <nav className="flex-1 overflow-y-auto p-4">
             <div className="space-y-1">

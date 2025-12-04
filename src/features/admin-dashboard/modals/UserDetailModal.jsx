@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiX, FiUser, FiMail, FiPhone, FiCalendar, FiEdit2, FiSave } from "react-icons/fi";
 import Button from "../../../ui/buttons/Button";
 import Input from "../../../ui/inputs/Input";
@@ -12,6 +12,19 @@ const UserDetailModal = ({ user, isOpen, onClose, onUpdate }) => {
     phone: user?.phone || "",
     status: user?.status || "active",
   });
+
+  // Update formData when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        status: user.status || "active",
+      });
+      setIsEditing(false); // Reset editing state when user changes
+    }
+  }, [user]);
 
   if (!isOpen || !user) return null;
 

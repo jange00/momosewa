@@ -1,8 +1,9 @@
 import { useState } from "react";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
-import { FiSearch, FiUser, FiMail, FiPhone, FiCalendar } from "react-icons/fi";
+import { FiSearch, FiUser, FiMail, FiPhone, FiCalendar, FiDownload } from "react-icons/fi";
 import UserDetailModal from "../../features/admin-dashboard/modals/UserDetailModal";
+import toast from "react-hot-toast";
 
 // Mock data - replace with actual API calls
 const mockUsers = [
@@ -53,8 +54,9 @@ const AdminUsersPage = () => {
   const [selectedRole, setSelectedRole] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [users, setUsers] = useState(mockUsers);
 
-  const filteredUsers = mockUsers.filter((user) => {
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,6 +74,17 @@ const AdminUsersPage = () => {
             <h1 className="text-3xl font-black text-charcoal-grey">User Management</h1>
             <p className="text-charcoal-grey/70 mt-1">Manage all platform users</p>
           </div>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => {
+              // Export functionality
+              toast.success("Export feature coming soon!");
+            }}
+          >
+            <FiDownload className="w-4 h-4 mr-2" />
+            Export Data
+          </Button>
         </div>
 
         {/* Filters */}
@@ -112,6 +125,32 @@ const AdminUsersPage = () => {
             </div>
           </div>
         </Card>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Total Users</p>
+            <p className="text-2xl font-black text-charcoal-grey">{users.length}</p>
+          </Card>
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Customers</p>
+            <p className="text-2xl font-black text-deep-maroon">
+              {users.filter((u) => u.role === "Customer").length}
+            </p>
+          </Card>
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Vendors</p>
+            <p className="text-2xl font-black text-golden-amber">
+              {users.filter((u) => u.role === "Vendor").length}
+            </p>
+          </Card>
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Active</p>
+            <p className="text-2xl font-black text-green-600">
+              {users.filter((u) => u.status === "active").length}
+            </p>
+          </Card>
+        </div>
 
         {/* Users Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -201,6 +240,16 @@ const AdminUsersPage = () => {
           setSelectedUser(null);
         }}
         onUpdate={(userId, updatedData) => {
+          // Update user in state
+          setUsers((prevUsers) =>
+            prevUsers.map((u) =>
+              u.id === userId ? { ...u, ...updatedData } : u
+            )
+          );
+          // Update selected user if it's the same one
+          if (selectedUser?.id === userId) {
+            setSelectedUser({ ...selectedUser, ...updatedData });
+          }
           // TODO: Replace with actual API call
           console.log("Update user:", userId, updatedData);
         }}

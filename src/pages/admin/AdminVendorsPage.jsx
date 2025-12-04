@@ -1,8 +1,9 @@
 import { useState } from "react";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
-import { FiSearch, FiMail, FiPhone, FiCalendar, FiShoppingBag, FiStar } from "react-icons/fi";
+import { FiSearch, FiMail, FiPhone, FiCalendar, FiShoppingBag, FiStar, FiDownload } from "react-icons/fi";
 import VendorDetailModal from "../../features/admin-dashboard/modals/VendorDetailModal";
+import toast from "react-hot-toast";
 
 // Mock data - replace with actual API calls
 const mockVendors = [
@@ -49,8 +50,9 @@ const AdminVendorsPage = () => {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [vendors, setVendors] = useState(mockVendors);
 
-  const filteredVendors = mockVendors.filter((vendor) => {
+  const filteredVendors = vendors.filter((vendor) => {
     const matchesSearch =
       vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vendor.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,6 +71,17 @@ const AdminVendorsPage = () => {
             <h1 className="text-3xl font-black text-charcoal-grey">Vendor Management</h1>
             <p className="text-charcoal-grey/70 mt-1">Manage all platform vendors</p>
           </div>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => {
+              // Export functionality
+              toast.success("Export feature coming soon!");
+            }}
+          >
+            <FiDownload className="w-4 h-4 mr-2" />
+            Export Data
+          </Button>
         </div>
 
         {/* Filters */}
@@ -109,6 +122,26 @@ const AdminVendorsPage = () => {
             </div>
           </div>
         </Card>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Total Vendors</p>
+            <p className="text-2xl font-black text-charcoal-grey">{vendors.length}</p>
+          </Card>
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Active</p>
+            <p className="text-2xl font-black text-green-600">
+              {vendors.filter((v) => v.status === "active").length}
+            </p>
+          </Card>
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Pending</p>
+            <p className="text-2xl font-black text-yellow-600">
+              {vendors.filter((v) => v.status === "pending").length}
+            </p>
+          </Card>
+        </div>
 
         {/* Vendors Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -208,14 +241,42 @@ const AdminVendorsPage = () => {
           setSelectedVendor(null);
         }}
         onUpdate={(vendorId, updatedData) => {
+          // Update vendor in state
+          setVendors((prevVendors) =>
+            prevVendors.map((v) =>
+              v.id === vendorId ? { ...v, ...updatedData } : v
+            )
+          );
+          // Update selected vendor if it's the same one
+          if (selectedVendor?.id === vendorId) {
+            setSelectedVendor({ ...selectedVendor, ...updatedData });
+          }
           // TODO: Replace with actual API call
           console.log("Update vendor:", vendorId, updatedData);
         }}
         onApprove={(vendorId) => {
+          // Update vendor status to active
+          setVendors((prevVendors) =>
+            prevVendors.map((v) =>
+              v.id === vendorId ? { ...v, status: "active" } : v
+            )
+          );
+          if (selectedVendor?.id === vendorId) {
+            setSelectedVendor({ ...selectedVendor, status: "active" });
+          }
           // TODO: Replace with actual API call
           console.log("Approve vendor:", vendorId);
         }}
         onReject={(vendorId) => {
+          // Update vendor status to rejected
+          setVendors((prevVendors) =>
+            prevVendors.map((v) =>
+              v.id === vendorId ? { ...v, status: "rejected" } : v
+            )
+          );
+          if (selectedVendor?.id === vendorId) {
+            setSelectedVendor({ ...selectedVendor, status: "rejected" });
+          }
           // TODO: Replace with actual API call
           console.log("Reject vendor:", vendorId);
         }}
