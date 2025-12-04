@@ -1,9 +1,10 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useState } from "react";
+import Navbar from "../features/navbar/components/Navbar";
 import DashboardSidebar from "../features/admin-dashboard/components/DashboardSidebar";
 import DashboardHeader from "../features/admin-dashboard/components/DashboardHeader";
 
-const DASHBOARD_ROUTES = [
+const ADMIN_DASHBOARD_ROUTES = [
   "/admin/dashboard",
   "/admin/orders",
   "/admin/users",
@@ -17,7 +18,8 @@ const DASHBOARD_ROUTES = [
 const AdminLayout = () => {
   const { pathname } = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isDashboardRoute = DASHBOARD_ROUTES.some((route) => pathname.startsWith(route)) || pathname.startsWith("/admin/orders/");
+  // Include order detail pages in dashboard layout
+  const isDashboardRoute = ADMIN_DASHBOARD_ROUTES.some((route) => pathname.startsWith(route)) || pathname.startsWith("/admin/orders/");
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
@@ -42,9 +44,10 @@ const AdminLayout = () => {
     );
   }
 
-  // Default layout for non-dashboard routes (if any)
+  // Default layout with navbar for non-dashboard routes
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      <Navbar />
       <main className="flex-1">
         <Outlet />
       </main>
