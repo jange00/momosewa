@@ -36,6 +36,7 @@ import VendorAnalyticsPage from "../pages/vendor/VendorAnalyticsPage";
 import VendorNotificationsPage from "../pages/vendor/VendorNotificationsPage";
 import VendorSettingsPage from "../pages/vendor/VendorSettingsPage";
 import VendorProfilePage from "../pages/vendor/VendorProfilePage";
+import VendorPendingApprovalPage from "../pages/vendor/VendorPendingApprovalPage";
 
 // Admin Dashboard Pages
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
@@ -149,6 +150,10 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      {
+        path: "/vendor/pending-approval",
+        element: <VendorPendingApprovalPage />,
+      },
       {
         path: "/vendor/dashboard",
         element: <VendorDashboardPage />,

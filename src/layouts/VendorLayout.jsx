@@ -1,8 +1,11 @@
-import { Outlet, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Navbar from "../features/navbar/components/Navbar";
 import DashboardSidebar from "../features/vendor-dashboard/components/DashboardSidebar";
 import DashboardHeader from "../features/vendor-dashboard/components/DashboardHeader";
+import { getVendorStatus } from "../utils/pendingVendors";
+import { USER_ROLES } from "../common/roleConstants";
+import toast from "react-hot-toast";
 
 const VENDOR_DASHBOARD_ROUTES = [
   "/vendor/dashboard",
@@ -16,12 +19,47 @@ const VENDOR_DASHBOARD_ROUTES = [
 
 const VendorLayout = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // Include order detail pages in dashboard layout
   const isDashboardRoute = VENDOR_DASHBOARD_ROUTES.some((route) => pathname.startsWith(route)) || pathname.startsWith("/vendor/orders/");
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
+
+  // Check vendor approval status for dashboard routes (but not for pending approval page itself)
+  useEffect(() => {
+    if (isDashboardRoute && pathname !== "/vendor/pending-approval") {
+      const role = localStorage.getItem("role");
+      const email = localStorage.getItem("email");
+
+      if (role === USER_ROLES.VENDOR && email) {
+        const vendorStatus = getVendorStatus(email);
+        
+        if (vendorStatus === "pending") {
+          navigate("/vendor/pending-approval");
+          return;
+        } else if (vendorStatus === "rejected") {
+          navigate("/vendor/pending-approval");
+          return;
+        } else if (vendorStatus !== "active") {
+          navigate("/vendor/pending-approval");
+          return;
+        }
+      }
+    }
+  }, [pathname, isDashboardRoute, navigate]);
+
+  // If on pending approval page, don't show dashboard layout
+  if (pathname === "/vendor/pending-approval") {
+    return (
+      <div className="flex min-h-screen flex-col bg-white">
+        <main className="flex-1">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   if (isDashboardRoute) {
     return (

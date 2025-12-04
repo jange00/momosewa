@@ -1,56 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import { FiSearch, FiMail, FiPhone, FiCalendar, FiShoppingBag, FiStar, FiDownload } from "react-icons/fi";
 import VendorDetailModal from "../../features/admin-dashboard/modals/VendorDetailModal";
+import { getPendingVendors, getApprovedVendors, approveVendor, rejectVendor } from "../../utils/pendingVendors";
 import toast from "react-hot-toast";
-
-// Mock data - replace with actual API calls
-const mockVendors = [
-  {
-    id: 1,
-    name: "Momo House",
-    businessName: "Momo House Restaurant",
-    email: "momo.house@example.com",
-    phone: "+977 9834567890",
-    joinDate: "Dec 20, 2023",
-    status: "active",
-    totalOrders: 156,
-    rating: 4.5,
-    totalRevenue: 245000,
-  },
-  {
-    id: 2,
-    name: "Delicious Momos",
-    businessName: "Delicious Momos & More",
-    email: "delicious.momos@example.com",
-    phone: "+977 9845678901",
-    joinDate: "Dec 15, 2023",
-    status: "active",
-    totalOrders: 98,
-    rating: 4.8,
-    totalRevenue: 189000,
-  },
-  {
-    id: 3,
-    name: "Street Momo Corner",
-    businessName: "Street Momo Corner",
-    email: "street.momo@example.com",
-    phone: "+977 9856789012",
-    joinDate: "Jan 5, 2024",
-    status: "pending",
-    totalOrders: 12,
-    rating: 4.2,
-    totalRevenue: 15000,
-  },
-];
 
 const AdminVendorsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [vendors, setVendors] = useState(mockVendors);
+  const [vendors, setVendors] = useState([]);
+
+  // Load vendors from storage
+  useEffect(() => {
+    loadVendors();
+  }, []);
+
+  const loadVendors = () => {
+    const pendingVendors = getPendingVendors();
+    const approvedVendors = getApprovedVendors();
+    
+    // Combine and format vendors
+    const allVendors = [
+      ...pendingVendors.map(v => ({
+        ...v,
+        joinDate: v.applicationDate ? new Date(v.applicationDate).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }) : "N/A",
+        totalOrders: 0, // Mock data - replace with actual
+        rating: 0, // Mock data - replace with actual
+        totalRevenue: 0, // Mock data - replace with actual
+      })),
+      ...approvedVendors.map(v => ({
+        ...v,
+        joinDate: v.approvedDate ? new Date(v.approvedDate).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }) : "N/A",
+        totalOrders: 156, // Mock data - replace with actual
+        rating: 4.5, // Mock data - replace with actual
+        totalRevenue: 245000, // Mock data - replace with actual
+      })),
+    ];
+    
+    setVendors(allVendors);
+  };
 
   const filteredVendors = vendors.filter((vendor) => {
     const matchesSearch =
@@ -124,24 +123,58 @@ const AdminVendorsPage = () => {
         </Card>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card className="p-4 text-center">
             <p className="text-sm text-charcoal-grey/60 mb-1">Total Vendors</p>
             <p className="text-2xl font-black text-charcoal-grey">{vendors.length}</p>
           </Card>
-          <Card className="p-4 text-center">
+          <Card className="p-4 text-center bg-gradient-to-br from-green-50 to-transparent border-green-200">
             <p className="text-sm text-charcoal-grey/60 mb-1">Active</p>
             <p className="text-2xl font-black text-green-600">
               {vendors.filter((v) => v.status === "active").length}
             </p>
           </Card>
-          <Card className="p-4 text-center">
-            <p className="text-sm text-charcoal-grey/60 mb-1">Pending</p>
+          <Card className="p-4 text-center bg-gradient-to-br from-yellow-50 to-transparent border-yellow-200">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Pending Review</p>
             <p className="text-2xl font-black text-yellow-600">
               {vendors.filter((v) => v.status === "pending").length}
             </p>
           </Card>
+          <Card className="p-4 text-center">
+            <p className="text-sm text-charcoal-grey/60 mb-1">Rejected</p>
+            <p className="text-2xl font-black text-red-600">
+              {vendors.filter((v) => v.status === "rejected").length}
+            </p>
+          </Card>
         </div>
+
+        {/* Pending Vendors Alert */}
+        {vendors.filter((v) => v.status === "pending").length > 0 && (
+          <Card className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <span className="text-xl">⚠️</span>
+                </div>
+                <div>
+                  <p className="font-bold text-charcoal-grey">
+                    {vendors.filter((v) => v.status === "pending").length} vendor application(s) pending review
+                  </p>
+                  <p className="text-sm text-charcoal-grey/70">
+                    Review and approve vendor applications to activate their accounts
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setSelectedStatus("pending")}
+              >
+                Review Now
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Vendors Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -251,34 +284,48 @@ const AdminVendorsPage = () => {
           if (selectedVendor?.id === vendorId) {
             setSelectedVendor({ ...selectedVendor, ...updatedData });
           }
+          // Reload vendors to get updated data
+          loadVendors();
           // TODO: Replace with actual API call
           console.log("Update vendor:", vendorId, updatedData);
         }}
         onApprove={(vendorId) => {
-          // Update vendor status to active
-          setVendors((prevVendors) =>
-            prevVendors.map((v) =>
-              v.id === vendorId ? { ...v, status: "active" } : v
-            )
-          );
-          if (selectedVendor?.id === vendorId) {
-            setSelectedVendor({ ...selectedVendor, status: "active" });
+          try {
+            // Approve vendor using utility function
+            approveVendor(vendorId);
+            toast.success("Vendor approved successfully!");
+            
+            // Reload vendors list
+            loadVendors();
+            
+            // Close modal
+            setIsModalOpen(false);
+            setSelectedVendor(null);
+            
+            // TODO: Replace with actual API call
+            // In production, also send email notification to vendor
+          } catch (error) {
+            toast.error(error.message || "Failed to approve vendor");
           }
-          // TODO: Replace with actual API call
-          console.log("Approve vendor:", vendorId);
         }}
         onReject={(vendorId) => {
-          // Update vendor status to rejected
-          setVendors((prevVendors) =>
-            prevVendors.map((v) =>
-              v.id === vendorId ? { ...v, status: "rejected" } : v
-            )
-          );
-          if (selectedVendor?.id === vendorId) {
-            setSelectedVendor({ ...selectedVendor, status: "rejected" });
+          try {
+            // Reject vendor using utility function
+            rejectVendor(vendorId);
+            toast.success("Vendor application rejected");
+            
+            // Reload vendors list
+            loadVendors();
+            
+            // Close modal
+            setIsModalOpen(false);
+            setSelectedVendor(null);
+            
+            // TODO: Replace with actual API call
+            // In production, also send email notification to vendor
+          } catch (error) {
+            toast.error(error.message || "Failed to reject vendor");
           }
-          // TODO: Replace with actual API call
-          console.log("Reject vendor:", vendorId);
         }}
       />
     </div>

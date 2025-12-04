@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiX, FiShoppingBag, FiMail, FiPhone, FiCalendar, FiEdit2, FiSave, FiStar, FiCheck, FiXCircle } from "react-icons/fi";
+import { FiX, FiShoppingBag, FiMail, FiPhone, FiCalendar, FiEdit2, FiSave, FiStar, FiCheck, FiXCircle, FiMapPin } from "react-icons/fi";
 import Button from "../../../ui/buttons/Button";
 import Input from "../../../ui/inputs/Input";
 import toast from "react-hot-toast";
@@ -177,6 +177,34 @@ const VendorDetailModal = ({ vendor, isOpen, onClose, onUpdate, onApprove, onRej
                   <div className="flex items-center gap-3 text-charcoal-grey/70">
                     <span className="font-semibold">Total Revenue:</span>
                     <span>Rs. {vendor.totalRevenue.toLocaleString()}</span>
+                  </div>
+                )}
+                {vendor.businessAddress && (
+                  <div className="flex items-start gap-3 text-charcoal-grey/70">
+                    <FiMapPin className="w-5 h-5 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="font-semibold">Address: </span>
+                      <span>{vendor.businessAddress}</span>
+                    </div>
+                  </div>
+                )}
+                {vendor.businessLicense && (
+                  <div className="flex items-center gap-3 text-charcoal-grey/70">
+                    <span className="font-semibold">License:</span>
+                    <span>{vendor.businessLicense}</span>
+                  </div>
+                )}
+                {vendor.applicationDate && (
+                  <div className="flex items-center gap-3 text-charcoal-grey/70">
+                    <FiCalendar className="w-5 h-5" />
+                    <span className="font-semibold">Applied:</span>
+                    <span>{new Date(vendor.applicationDate).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}</span>
                   </div>
                 )}
               </>

@@ -7,6 +7,7 @@ import VendorSignupForm from "../features/auth/components/signup/VendorSignupFor
 import Footer from "../features/landing/components/Footer";
 import { USER_ROLES, ROLE_DASHBOARD_ROUTES } from "../common/roleConstants";
 import { saveVendorData } from "../utils/vendorData";
+import { addPendingVendor } from "../utils/pendingVendors";
 
 const VendorSignupPage = () => {
   const navigate = useNavigate();
@@ -94,50 +95,67 @@ const VendorSignupPage = () => {
     
     // Simulate API call
     setTimeout(() => {
-      console.log("Vendor signup attempt:", formData);
-      
-      // Save all vendor details to localStorage
-      // In real app, this would come from API response
-      saveVendorData({
-        role: USER_ROLES.VENDOR,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        businessName: formData.businessName,
-        businessAddress: formData.businessAddress,
-        businessLicense: formData.businessLicense || "",
-        storeName: formData.businessName, // Use business name as default store name
-        vendorId: `VENDOR-${Date.now()}`, // Generate temporary ID
-      });
-      
-      setIsLoading(false);
-      toast.success("Vendor account created successfully! Redirecting to login...");
-      
-      // Navigate to login (vendor accounts need admin approval)
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      try {
+        console.log("Vendor signup attempt:", formData);
+        
+        // Add vendor to pending applications (requires admin approval)
+        const pendingVendor = addPendingVendor({
+          role: USER_ROLES.VENDOR,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          businessName: formData.businessName,
+          businessAddress: formData.businessAddress,
+          businessLicense: formData.businessLicense || "",
+          storeName: formData.businessName, // Use business name as default store name
+          password: formData.password, // In production, this should be hashed
+        });
+        
+        // Save basic vendor data for login check (but status is pending)
+        saveVendorData({
+          role: USER_ROLES.VENDOR,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          businessName: formData.businessName,
+          businessAddress: formData.businessAddress,
+          businessLicense: formData.businessLicense || "",
+          storeName: formData.businessName,
+          vendorId: pendingVendor.id,
+        });
+        
+        setIsLoading(false);
+        toast.success("Vendor application submitted! Waiting for admin approval. You'll be notified once approved.");
+        
+        // Navigate to pending approval page
+        setTimeout(() => {
+          navigate("/vendor/pending-approval");
+        }, 1500);
+      } catch (error) {
+        setIsLoading(false);
+        toast.error(error.message || "Failed to submit vendor application. Please try again.");
+      }
     }, 1000);
   };
 
   const handleGoogleSignup = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      console.log("Google vendor signup success:", tokenResponse);
-      
-      // In real app, send token to backend with role and get vendor details
-      // For now, save basic vendor data
-      saveVendorData({
-        role: USER_ROLES.VENDOR,
-        token: tokenResponse.access_token,
-        vendorId: `VENDOR-${Date.now()}`,
-      });
-      
-      toast.success("Google signup successful! Redirecting...");
-      
-      // Navigate to vendor dashboard (or pending approval page)
-      setTimeout(() => {
-        navigate(ROLE_DASHBOARD_ROUTES[USER_ROLES.VENDOR]);
-      }, 1000);
+    onSuccess: async (tokenResponse) => {
+      try {
+        console.log("Google vendor signup success:", tokenResponse);
+        
+        // In real app, send token to backend to get user details
+        // For now, we'll need additional info for vendor signup
+        // This is a simplified version - in production, you'd get user info from Google
+        toast.info("Please complete your vendor profile information");
+        
+        // For Google signup, we still need business details
+        // In production, you might redirect to a form to collect business info
+        // For now, show a message that they need to complete the form
+        toast.error("Please use the form to provide your business details for vendor registration");
+      } catch (error) {
+        console.error("Google signup failed:", error);
+        toast.error("Google signup failed. Please try again.");
+      }
     },
     onError: () => {
       console.error("Google signup failed");

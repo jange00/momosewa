@@ -5,6 +5,8 @@ import LoginPromo from "../features/auth/components/login/LoginPromo";
 import LoginForm from "../features/auth/components/login/LoginForm";
 import Footer from "../features/landing/components/Footer";
 import { ROLE_DASHBOARD_ROUTES, USER_ROLES } from "../common/roleConstants";
+import { getVendorStatus } from "../utils/pendingVendors";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -71,8 +73,28 @@ const LoginPage = () => {
       
       // Get role from localStorage (in real app, this comes from API response)
       const userRole = localStorage.getItem("role");
+      const userEmail = localStorage.getItem("email");
       
       setIsLoading(false);
+      
+      // Check vendor approval status
+      if (userRole === USER_ROLES.VENDOR && userEmail) {
+        const vendorStatus = getVendorStatus(userEmail);
+        
+        if (vendorStatus === "pending") {
+          toast.info("Your vendor application is pending approval");
+          navigate("/vendor/pending-approval");
+          return;
+        } else if (vendorStatus === "rejected") {
+          toast.error("Your vendor application has been rejected");
+          navigate("/vendor/pending-approval");
+          return;
+        } else if (vendorStatus !== "active") {
+          toast.error("Your vendor account is not active");
+          navigate("/vendor/pending-approval");
+          return;
+        }
+      }
       
       // For customers, stay on landing page (navbar will show user menu)
       // For other roles, redirect to their dashboard
@@ -100,6 +122,26 @@ const LoginPage = () => {
       // For now, get role from localStorage
       // In production, role should come from API response
       const userRole = localStorage.getItem("role");
+      const userEmail = localStorage.getItem("email");
+      
+      // Check vendor approval status
+      if (userRole === USER_ROLES.VENDOR && userEmail) {
+        const vendorStatus = getVendorStatus(userEmail);
+        
+        if (vendorStatus === "pending") {
+          toast.info("Your vendor application is pending approval");
+          navigate("/vendor/pending-approval");
+          return;
+        } else if (vendorStatus === "rejected") {
+          toast.error("Your vendor application has been rejected");
+          navigate("/vendor/pending-approval");
+          return;
+        } else if (vendorStatus !== "active") {
+          toast.error("Your vendor account is not active");
+          navigate("/vendor/pending-approval");
+          return;
+        }
+      }
       
       // For customers, stay on landing page (navbar will show user menu)
       // For other roles, redirect to their dashboard
