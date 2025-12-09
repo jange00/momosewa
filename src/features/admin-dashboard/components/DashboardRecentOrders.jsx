@@ -21,16 +21,16 @@ const DashboardRecentOrders = ({ orders }) => {
               <FiPackage className="w-6 h-6 text-deep-maroon" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-charcoal-grey">Recent Orders</h2>
+        <h2 className="text-2xl font-black text-charcoal-grey">Recent Orders</h2>
               <p className="text-sm text-charcoal-grey/60">Latest platform activity</p>
             </div>
           </div>
-          <Link to="/admin/orders">
+        <Link to="/admin/orders">
             <Button variant="secondary" size="sm" className="group">
               <span>View All</span>
               <FiArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
+          </Button>
+        </Link>
         </div>
         
         {/* Quick Stats */}

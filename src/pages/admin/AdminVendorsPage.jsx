@@ -60,32 +60,32 @@ const initializeMockVendors = () => {
     ];
 
     const mockApprovedVendors = [
-      {
+  {
         id: "VENDOR-MOCK-004",
         role: "vendor",
-        name: "Momo House",
+    name: "Momo House",
         email: "momo.house@momosewa.com",
         phone: "+977 9834567890",
-        businessName: "Momo House Restaurant",
+    businessName: "Momo House Restaurant",
         businessAddress: "Lazimpat, Kathmandu",
         businessLicense: "LIC-2023-100",
         storeName: "Momo House Restaurant",
-        status: "active",
+    status: "active",
         applicationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
         approvedDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(), // 28 days ago
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
+  },
+  {
         id: "VENDOR-MOCK-005",
         role: "vendor",
-        name: "Delicious Momos",
+    name: "Delicious Momos",
         email: "delicious.momos@momosewa.com",
         phone: "+977 9845678901",
-        businessName: "Delicious Momos & More",
+    businessName: "Delicious Momos & More",
         businessAddress: "Baneshwor, Kathmandu",
         businessLicense: "LIC-2023-101",
         storeName: "Delicious Momos & More",
-        status: "active",
+    status: "active",
         applicationDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days ago
         approvedDate: new Date(Date.now() - 23 * 24 * 60 * 60 * 1000).toISOString(), // 23 days ago
         createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
@@ -269,8 +269,8 @@ const AdminVendorsPage = () => {
           </Card>
         )}
 
-          {/* Vendors Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Vendors Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVendors.map((vendor) => {
               // Check if vendor applied recently (within last 24 hours)
               const isNew = vendor.applicationDate && 
@@ -285,28 +285,28 @@ const AdminVendorsPage = () => {
                       </span>
                     </div>
                   )}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-deep-maroon to-golden-amber flex items-center justify-center text-white font-bold text-lg">
-                        {vendor.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-charcoal-grey">{vendor.businessName}</h3>
-                        <p className="text-xs text-charcoal-grey/60">{vendor.name}</p>
-                      </div>
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-lg font-medium ${
-                        vendor.status === "active"
-                          ? "bg-green-50 text-green-600"
-                          : vendor.status === "pending"
-                          ? "bg-yellow-50 text-yellow-600"
-                          : "bg-red-50 text-red-600"
-                      }`}
-                    >
-                      {vendor.status}
-                    </span>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-deep-maroon to-golden-amber flex items-center justify-center text-white font-bold text-lg">
+                    {vendor.name.charAt(0).toUpperCase()}
                   </div>
+                  <div>
+                    <h3 className="font-bold text-charcoal-grey">{vendor.businessName}</h3>
+                    <p className="text-xs text-charcoal-grey/60">{vendor.name}</p>
+                  </div>
+                </div>
+                <span
+                  className={`text-xs px-2 py-1 rounded-lg font-medium ${
+                    vendor.status === "active"
+                      ? "bg-green-50 text-green-600"
+                      : vendor.status === "pending"
+                      ? "bg-yellow-50 text-yellow-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {vendor.status}
+                </span>
+              </div>
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
                   <FiMail className="w-4 h-4" />
@@ -337,24 +337,24 @@ const AdminVendorsPage = () => {
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                      <FiCalendar className="w-4 h-4" />
-                      <span>Joined {vendor.joinDate}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-charcoal-grey/70">
-                        <FiShoppingBag className="w-4 h-4" />
-                        <span>{vendor.totalOrders} orders</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-golden-amber">
-                        <FiStar className="w-4 h-4 fill-current" />
-                        <span className="font-semibold">{vendor.rating}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                      <span className="font-semibold">Revenue:</span>
-                      <span>Rs. {vendor.totalRevenue.toLocaleString()}</span>
-                    </div>
+                <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                  <FiCalendar className="w-4 h-4" />
+                  <span>Joined {vendor.joinDate}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-charcoal-grey/70">
+                    <FiShoppingBag className="w-4 h-4" />
+                    <span>{vendor.totalOrders} orders</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-golden-amber">
+                    <FiStar className="w-4 h-4 fill-current" />
+                    <span className="font-semibold">{vendor.rating}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                  <span className="font-semibold">Revenue:</span>
+                  <span>Rs. {vendor.totalRevenue.toLocaleString()}</span>
+                </div>
                   </>
                 )}
               </div>
@@ -383,17 +383,17 @@ const AdminVendorsPage = () => {
                     Approve
                   </Button>
                 ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedVendor(vendor);
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    Edit
-                  </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedVendor(vendor);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  Edit
+                </Button>
                 )}
               </div>
             </Card>
@@ -445,7 +445,7 @@ const AdminVendorsPage = () => {
             setIsModalOpen(false);
             setSelectedVendor(null);
             
-            // TODO: Replace with actual API call
+          // TODO: Replace with actual API call
             // In production, also send email notification to vendor
           } catch (error) {
             toast.error(error.message || "Failed to approve vendor");
@@ -464,7 +464,7 @@ const AdminVendorsPage = () => {
             setIsModalOpen(false);
             setSelectedVendor(null);
             
-            // TODO: Replace with actual API call
+          // TODO: Replace with actual API call
             // In production, also send email notification to vendor
           } catch (error) {
             toast.error(error.message || "Failed to reject vendor");

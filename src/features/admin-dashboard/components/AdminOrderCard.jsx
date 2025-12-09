@@ -72,38 +72,38 @@ const AdminOrderCard = ({ order }) => {
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${status.dot} animate-pulse`}></span>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text} ${status.border} border`}>
-                  {statusLabel}
-                </span>
+              {statusLabel}
+            </span>
               </div>
             </div>
           </div>
           
           <div className="space-y-2 mb-4">
             <p className="text-sm text-charcoal-grey/60 flex items-center gap-2">
-              <FiClock className="w-4 h-4" />
+            <FiClock className="w-4 h-4" />
               <span>{order.date}</span>
-            </p>
-            
-            {/* Customer Info */}
-            {order.customer && (
+          </p>
+          
+          {/* Customer Info */}
+          {order.customer && (
               <div className="flex items-center gap-2 text-sm text-charcoal-grey/80 bg-charcoal-grey/5 rounded-lg px-3 py-2">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-deep-maroon/20 to-golden-amber/20 flex items-center justify-center">
                   <FiUser className="w-3.5 h-3.5 text-deep-maroon" />
                 </div>
                 <span className="font-semibold">{order.customer.name}</span>
-              </div>
-            )}
-            
-            {/* Vendor Info */}
-            {order.vendor && (
+            </div>
+          )}
+          
+          {/* Vendor Info */}
+          {order.vendor && (
               <div className="flex items-center gap-2 text-sm text-charcoal-grey/80 bg-charcoal-grey/5 rounded-lg px-3 py-2">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-golden-amber/20 to-deep-maroon/20 flex items-center justify-center">
                   <FiShoppingBag className="w-3.5 h-3.5 text-golden-amber" />
                 </div>
                 <span className="font-semibold truncate">{order.vendor.name || order.vendor.businessName}</span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
         </div>
       </div>
 
@@ -111,24 +111,24 @@ const AdminOrderCard = ({ order }) => {
       {order.items && order.items.length > 0 && (
         <div className="mb-4 p-3 bg-gradient-to-br from-charcoal-grey/5 to-transparent rounded-xl border border-charcoal-grey/10">
           <div className="space-y-2.5">
-            {order.items.slice(0, 2).map((item, index) => (
-              <div key={index} className="flex items-center gap-3 text-sm">
+          {order.items.slice(0, 2).map((item, index) => (
+            <div key={index} className="flex items-center gap-3 text-sm">
                 <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center text-xl shadow-sm">
                   {item.emoji || "🥟"}
                 </div>
                 <span className="flex-1 text-charcoal-grey/90 font-medium">
-                  {item.quantity}x {item.name}
-                </span>
+                {item.quantity}x {item.name}
+              </span>
                 <span className="text-charcoal-grey/70 font-semibold">Rs. {item.price}</span>
-              </div>
-            ))}
-            {order.items.length > 2 && (
+            </div>
+          ))}
+          {order.items.length > 2 && (
               <div className="pt-2 border-t border-charcoal-grey/10">
                 <p className="text-xs text-charcoal-grey/60 text-center font-medium">
-                  +{order.items.length - 2} more items
-                </p>
+              +{order.items.length - 2} more items
+            </p>
               </div>
-            )}
+          )}
           </div>
         </div>
       )}

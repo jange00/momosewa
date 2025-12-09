@@ -101,7 +101,7 @@ const AdminDashboardPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Orders */}
           <div className="lg:col-span-2">
-            <DashboardRecentOrders orders={mockRecentOrders} />
+        <DashboardRecentOrders orders={mockRecentOrders} />
           </div>
           
           {/* Activity Feed */}

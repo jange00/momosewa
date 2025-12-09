@@ -96,8 +96,8 @@ const VendorSignupPage = () => {
     // Simulate API call
     setTimeout(() => {
       try {
-        console.log("Vendor signup attempt:", formData);
-        
+      console.log("Vendor signup attempt:", formData);
+      
         // Add vendor to pending applications (requires admin approval)
         const pendingVendor = addPendingVendor({
           role: USER_ROLES.VENDOR,
@@ -112,25 +112,25 @@ const VendorSignupPage = () => {
         });
         
         // Save basic vendor data for login check (but status is pending)
-        saveVendorData({
-          role: USER_ROLES.VENDOR,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          businessName: formData.businessName,
-          businessAddress: formData.businessAddress,
-          businessLicense: formData.businessLicense || "",
+      saveVendorData({
+        role: USER_ROLES.VENDOR,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        businessName: formData.businessName,
+        businessAddress: formData.businessAddress,
+        businessLicense: formData.businessLicense || "",
           storeName: formData.businessName,
           vendorId: pendingVendor.id,
-        });
-        
-        setIsLoading(false);
+      });
+      
+      setIsLoading(false);
         toast.success("Vendor application submitted! Waiting for admin approval. You'll be notified once approved.");
-        
+      
         // Navigate to pending approval page
-        setTimeout(() => {
+      setTimeout(() => {
           navigate("/vendor/pending-approval");
-        }, 1500);
+      }, 1500);
       } catch (error) {
         setIsLoading(false);
         toast.error(error.message || "Failed to submit vendor application. Please try again.");
@@ -141,8 +141,8 @@ const VendorSignupPage = () => {
   const handleGoogleSignup = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        console.log("Google vendor signup success:", tokenResponse);
-        
+      console.log("Google vendor signup success:", tokenResponse);
+      
         // In real app, send token to backend to get user details
         // For now, we'll need additional info for vendor signup
         // This is a simplified version - in production, you'd get user info from Google
