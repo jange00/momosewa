@@ -19,3 +19,5 @@ const SearchBar = ({ value, onChange, placeholder = "Search..." }) => {
 
 export default SearchBar;
 
+
+
