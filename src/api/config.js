@@ -4,6 +4,8 @@
  */
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1';
+// WebSocket URL - use ws:// for development, wss:// for production
+// Socket.IO will handle the protocol conversion automatically, but we keep it explicit
 export const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5001';
 
 /**

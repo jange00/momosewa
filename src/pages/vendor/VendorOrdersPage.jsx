@@ -17,7 +17,7 @@ const VendorOrdersPage = () => {
   // Fetch vendor orders from API
   // Note: Use /orders endpoint (backend filters by vendor based on auth token)
   // /vendors/orders doesn't exist and causes routing errors
-  const { data: ordersData, isLoading } = useGet(
+  const { data: ordersData, isLoading, refetch } = useGet(
     'vendor-orders',
     API_ENDPOINTS.ORDERS,
     { showErrorToast: false } // Handle errors gracefully
@@ -49,7 +49,7 @@ const VendorOrdersPage = () => {
       if (response.data.success) {
         toast.success(response.data.message || "Order status updated successfully");
         // Refetch orders to get updated data
-        window.location.reload();
+        refetch();
       }
     } catch (error) {
       console.error("Failed to update order status:", error);

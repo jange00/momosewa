@@ -15,13 +15,172 @@ const AdminVendorsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch vendors from API
-  const { data: vendorsData, isLoading, refetch } = useGet(
+  // ISSUE: Backend might be querying for role: "Vendor" only
+  // But pending vendors have role: "Customer" in database!
+  // So we try multiple approaches:
+  
+  // Approach 1: Try the main vendors endpoint
+  // Backend now returns: { success: true, data: { applications: [...] } } for pending vendors
+  const { data: vendorsData, isLoading, error, refetch } = useGet(
     'admin-vendors',
     `${API_ENDPOINTS.ADMIN}/vendors`,
-    { showErrorToast: true }
+    { 
+      showErrorToast: false, // Don't show error, we'll try fallback
+      // Try with params to get all vendors including pending
+      params: { includePending: true, status: 'all' }
+    }
   );
 
-  const vendors = vendorsData?.data?.vendors || vendorsData?.data || [];
+  // Approach 1b: Also try the pending vendors endpoint specifically
+  // GET /admin/vendors/pending returns { success: true, data: { applications: [...] } }
+  const { data: pendingVendorsData } = useGet(
+    'admin-vendors-pending',
+    `${API_ENDPOINTS.ADMIN}/vendors/pending`,
+    { 
+      showErrorToast: false,
+      // Only fetch if main endpoint doesn't return pending vendors
+      enabled: !vendorsData?.data?.applications && !isLoading
+    }
+  );
+
+  // Approach 2: Fallback - Try fetching all users and filter for vendors
+  // This is a workaround if the vendors endpoint doesn't return pending vendors
+  const { data: usersData } = useGet(
+    'admin-users-fallback',
+    `${API_ENDPOINTS.ADMIN}/users`,
+    { 
+      enabled: vendorsData?.data?.vendors?.length === 0 && !isLoading, // Only if vendors endpoint returns empty
+      showErrorToast: false,
+    }
+  );
+
+  // Log for debugging (remove in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('AdminVendorsPage - vendorsData:', vendorsData);
+    console.log('AdminVendorsPage - error:', error);
+  }
+  
+  // Handle different response structures
+  let vendors = [];
+  let pendingApplications = [];
+  
+  // First, try to get vendors from the vendors endpoint
+  if (vendorsData) {
+    if (vendorsData.data) {
+      // NEW: Handle applications array (for pending vendor applications)
+      // Backend now returns: { success: true, data: { applications: [...] } }
+      if (vendorsData.data.applications && Array.isArray(vendorsData.data.applications)) {
+        // These are vendor applications with user info directly on the object
+        pendingApplications = vendorsData.data.applications;
+      }
+      // Also get approved vendors
+      const approvedVendors = vendorsData.data.vendors || 
+                               vendorsData.data.vendor || 
+                               (Array.isArray(vendorsData.data) && !vendorsData.data.applications ? vendorsData.data : []);
+      vendors = [...approvedVendors];
+    } else if (Array.isArray(vendorsData)) {
+      vendors = vendorsData;
+    }
+  }
+  
+  // Also check the pending vendors endpoint
+  if (pendingVendorsData?.data?.applications) {
+    pendingApplications = [...pendingApplications, ...pendingVendorsData.data.applications];
+  }
+  
+  // Merge pending applications with approved vendors
+  // Remove duplicates based on _id
+  const allVendorsMap = new Map();
+  
+  // Add approved vendors first
+  vendors.forEach(v => {
+    const id = v._id || v.id;
+    if (id) allVendorsMap.set(id, v);
+  });
+  
+  // Add pending applications (will overwrite if same ID exists, which shouldn't happen)
+  pendingApplications.forEach(app => {
+    const id = app._id || app.id;
+    if (id) allVendorsMap.set(id, app);
+  });
+  
+  vendors = Array.from(allVendorsMap.values());
+  
+  // FALLBACK: If no vendors found, try to extract from users endpoint
+  // This handles the case where pending vendors have role: "Customer"
+  if (vendors.length === 0 && usersData) {
+    let allUsers = [];
+    if (usersData.data) {
+      allUsers = usersData.data.users || 
+                 usersData.data.user || 
+                 (Array.isArray(usersData.data) ? usersData.data : []);
+    } else if (Array.isArray(usersData)) {
+      allUsers = usersData;
+    }
+    
+    // Filter for vendors: either role is "Vendor" OR has vendor fields (businessName, storeName)
+    vendors = allUsers.filter(user => {
+      const hasVendorRole = user.role === 'Vendor' || user.role === 'vendor';
+      const hasVendorFields = !!(user.businessName || user.storeName || user.businessAddress);
+      return hasVendorRole || hasVendorFields;
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AdminVendorsPage - Using fallback: Found vendors from users endpoint:', vendors.length);
+    }
+  }
+  
+  // Normalize vendor data and status
+  // IMPORTANT: For pending applications, user info (name, email, phone) is directly on the application object
+  // NOT in userId (which is null for pending applications)
+  vendors = vendors.map(vendor => {
+    // Normalize status field - check multiple possible field names
+    const status = vendor.status || 
+                   vendor.approvalStatus || 
+                   vendor.vendorStatus || 
+                   (vendor.role === 'Customer' ? 'pending' : 'active') || 
+                   'pending';
+    
+    // Normalize status to lowercase for consistent filtering
+    const normalizedStatus = status.toLowerCase();
+    
+    // For pending applications: user info is directly on the object
+    // For approved vendors: might be in userId or directly on object
+    const name = vendor.name || 
+                 vendor.userId?.name || 
+                 '';
+    const email = vendor.email || 
+                  vendor.userId?.email || 
+                  '';
+    const phone = vendor.phone || 
+                  vendor.userId?.phone || 
+                  '';
+    
+    return {
+      ...vendor,
+      status: normalizedStatus,
+      // Ensure we have all required fields
+      _id: vendor._id || vendor.id,
+      id: vendor.id || vendor._id,
+      // ✅ Use direct fields (works for both applications and vendors)
+      name: name,
+      businessName: vendor.businessName || vendor.storeName || name || 'Vendor',
+      email: email,
+      phone: phone,
+      // Preserve application-specific fields
+      applicationDate: vendor.applicationDate || vendor.createdAt,
+      businessAddress: vendor.businessAddress,
+      businessLicense: vendor.businessLicense,
+      storeName: vendor.storeName,
+    };
+  });
+  
+  // Log for debugging (remove in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('AdminVendorsPage - processed vendors:', vendors);
+    console.log('AdminVendorsPage - pending vendors:', vendors.filter(v => v.status === 'pending'));
+    console.log('AdminVendorsPage - all statuses:', [...new Set(vendors.map(v => v.status))]);
+  }
 
   const filteredVendors = vendors.filter((vendor) => {
     const matchesSearch =
@@ -41,25 +200,80 @@ const AdminVendorsPage = () => {
         return;
       }
       
-      // Use correct endpoint: PUT /admin/vendors/:id/approve
-      const response = await apiClient.put(
-        `${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/approve`
-      );
+      // Check if this is a pending application (status is pending)
+      const isPendingApplication = selectedVendor?.status === 'pending' || 
+                                   selectedVendor?.status === 'Pending';
+      
+      // For pending applications, try applications endpoint first
+      // For approved vendors, use vendors endpoint
+      // Try multiple endpoint variations to handle different backend implementations
+      const endpointsToTry = [];
+      
+      if (isPendingApplication) {
+        // Try applications endpoint first (most likely for pending apps)
+        endpointsToTry.push(`${API_ENDPOINTS.ADMIN}/vendors/applications/${vendorIdValue}/approve`);
+        endpointsToTry.push(`${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/approve`);
+      } else {
+        // For approved vendors, use vendors endpoint
+        endpointsToTry.push(`${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/approve`);
+      }
+      
+      // Try each endpoint until one works
+      let response;
+      let lastError;
+      
+      for (const endpoint of endpointsToTry) {
+        try {
+          console.log(`Trying endpoint: ${endpoint}`);
+          // Try with empty body first, then with body if needed
+          response = await apiClient.put(endpoint, {});
+          console.log(`Success with endpoint: ${endpoint}`);
+          break; // Success, exit loop
+        } catch (error) {
+          lastError = error;
+          console.log(`Failed with endpoint ${endpoint}:`, error.response?.status, error.response?.data);
+          
+          // If 400, try with a request body
+          if (error.response?.status === 400) {
+            try {
+              console.log(`Retrying ${endpoint} with request body...`);
+              response = await apiClient.put(endpoint, {
+                applicationId: vendorIdValue,
+                action: 'approve'
+              });
+              console.log(`Success with body: ${endpoint}`);
+              break; // Success, exit loop
+            } catch (bodyError) {
+              console.log(`Failed with body too: ${endpoint}`);
+              lastError = bodyError;
+              // Continue to next endpoint
+            }
+          }
+          
+          // If 404, try next endpoint
+          if (error.response?.status === 404 && endpointsToTry.indexOf(endpoint) < endpointsToTry.length - 1) {
+            continue; // Try next endpoint
+          }
+        }
+      }
+      
+      // If all endpoints failed, throw the last error
+      if (!response) {
+        throw lastError;
+      }
       
       const result = response.data;
       if (result.success) {
         const vendorEmail = selectedVendor?.email || '';
-        toast.success(
-          result.message || "Vendor approved successfully! They can now log in to their account.",
-          { duration: 5000 }
-        );
-        // Show additional info about vendor being able to log in
-        if (vendorEmail) {
-          toast.info(
-            `Vendor ${vendorEmail} can now log in and access their dashboard.`,
-            { duration: 4000 }
-          );
-        }
+        const successMessage = result.message || 
+          "Vendor approved successfully! They can now log in to their account.";
+        
+        // Combine messages into one toast (react-hot-toast doesn't have toast.info)
+        const fullMessage = vendorEmail 
+          ? `${successMessage} Vendor ${vendorEmail} can now log in and access their dashboard.`
+          : successMessage;
+        
+        toast.success(fullMessage, { duration: 5000 });
         refetch();
         setIsModalOpen(false);
         setSelectedVendor(null);
@@ -68,7 +282,48 @@ const AdminVendorsPage = () => {
       }
     } catch (error) {
       console.error("Failed to approve vendor:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Failed to approve vendor";
+      console.error("Error details:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        endpoint: error.config?.url
+      });
+      
+      // Provide more detailed error message
+      let errorMessage = "Failed to approve vendor";
+      
+      // Log full error details for debugging
+      if (error.response) {
+        const errorData = error.response.data;
+        console.error("Backend error response:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: errorData,
+          headers: error.response.headers
+        });
+        
+        if (error.response.status === 400) {
+          // 400 Bad Request - usually means wrong format or missing data
+          errorMessage = errorData?.message || 
+            errorData?.error ||
+            `Bad Request (400). Backend expects different format. Check console for details.`;
+          
+          // Show backend validation errors if available
+          if (errorData?.errors && Array.isArray(errorData.errors)) {
+            const validationErrors = errorData.errors.map(e => e.message || e).join(', ');
+            errorMessage += ` Validation errors: ${validationErrors}`;
+          }
+        } else if (error.response.status === 404) {
+          errorMessage = errorData?.message || 
+            "Vendor application not found. It may have already been processed.";
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        } else if (errorData?.error) {
+          errorMessage = errorData.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast.error(errorMessage);
     }
   };
@@ -81,11 +336,39 @@ const AdminVendorsPage = () => {
         return;
       }
       
-      // Use correct endpoint: PUT /admin/vendors/:id/reject
-      const response = await apiClient.put(
-        `${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/reject`,
-        { reason: "Application rejected by admin" }
-      );
+      // Check if this is a pending application
+      const isPendingApplication = selectedVendor?.status === 'pending' || 
+                                   selectedVendor?.status === 'Pending';
+      
+      // For pending applications, use applications endpoint
+      // For approved vendors, use vendors endpoint
+      let endpoint;
+      if (isPendingApplication) {
+        endpoint = `${API_ENDPOINTS.ADMIN}/vendors/applications/${vendorIdValue}/reject`;
+      } else {
+        endpoint = `${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/reject`;
+      }
+      
+      // Try the endpoint - if it fails with 404, try the alternative
+      let response;
+      try {
+        response = await apiClient.put(
+          endpoint,
+          { reason: "Application rejected by admin" }
+        );
+      } catch (firstError) {
+        // If first attempt fails and it's a pending application, try alternative endpoint
+        if (isPendingApplication && firstError.response?.status === 404) {
+          console.log('Trying alternative endpoint for pending application...');
+          endpoint = `${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/reject`;
+          response = await apiClient.put(
+            endpoint,
+            { reason: "Application rejected by admin" }
+          );
+        } else {
+          throw firstError;
+        }
+      }
       
       const result = response.data;
       if (result.success) {
@@ -98,7 +381,25 @@ const AdminVendorsPage = () => {
       }
     } catch (error) {
       console.error("Failed to reject vendor:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Failed to reject vendor";
+      console.error("Error details:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        endpoint: error.config?.url
+      });
+      
+      // Provide more detailed error message
+      let errorMessage = "Failed to reject vendor";
+      if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || 
+          "Invalid request. Please check if this is a valid pending vendor application.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Vendor application not found. It may have already been processed.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast.error(errorMessage);
     }
   };
@@ -106,7 +407,38 @@ const AdminVendorsPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon mx-auto mb-4"></div>
+          <p className="text-charcoal-grey/70">Loading vendors...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <Card className="p-8 text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-charcoal-grey mb-2">Error Loading Vendors</h2>
+            <p className="text-charcoal-grey/70 mb-4">
+              {error.message || 'Failed to load vendors. Please check your connection and try again.'}
+            </p>
+            <Button variant="primary" onClick={() => refetch()}>
+              Retry
+            </Button>
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-4 bg-red-50 rounded-lg text-left">
+                <p className="text-sm font-semibold text-red-800 mb-2">Debug Info:</p>
+                <pre className="text-xs text-red-700 overflow-auto">
+                  {JSON.stringify(error, null, 2)}
+                </pre>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
     );
   }
@@ -379,7 +711,38 @@ const AdminVendorsPage = () => {
 
         {filteredVendors.length === 0 && (
           <Card className="p-12 text-center">
-            <p className="text-charcoal-grey/60">No vendors found</p>
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-bold text-charcoal-grey mb-2">
+              {vendors.length === 0 
+                ? 'No Vendors Found' 
+                : 'No Vendors Match Your Filters'}
+            </h3>
+            <p className="text-charcoal-grey/60 mb-4">
+              {vendors.length === 0 
+                ? 'There are no vendors registered yet. Vendors will appear here once they register.' 
+                : 'Try adjusting your search or filter criteria.'}
+            </p>
+            {vendors.length === 0 && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg text-left max-w-md mx-auto">
+                <p className="text-sm text-blue-800 font-semibold mb-2">💡 Tip:</p>
+                <p className="text-sm text-blue-700">
+                  When vendors register, they will appear here with a "pending" status. 
+                  You can then review and approve their applications.
+                </p>
+              </div>
+            )}
+            {(searchQuery || selectedStatus !== "all") && vendors.length > 0 && (
+              <Button 
+                variant="secondary" 
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedStatus("all");
+                }}
+                className="mt-4"
+              >
+                Clear Filters
+              </Button>
+            )}
           </Card>
         )}
       </div>

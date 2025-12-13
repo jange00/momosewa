@@ -7,8 +7,9 @@ import Button from "../../ui/buttons/Button";
 import Badge from "../../ui/badges/Badge";
 import Input from "../../ui/inputs/Input";
 import ConfirmDialog from "../../ui/modals/ConfirmDialog";
-import { useGet, usePost, usePut, useDelete } from "../../hooks/useApi";
+import { useGet, usePost, useDelete } from "../../hooks/useApi";
 import { API_ENDPOINTS } from "../../api/config";
+import apiClient from "../../api/client";
 
 const VendorProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,12 +25,6 @@ const VendorProductsPage = () => {
 
   // Create product mutation
   const createProductMutation = usePost('vendor-products', API_ENDPOINTS.PRODUCTS, {
-    showSuccessToast: true,
-    showErrorToast: true,
-  });
-
-  // Update product mutation
-  const updateProductMutation = usePut('vendor-products', API_ENDPOINTS.PRODUCTS, {
     showSuccessToast: true,
     showErrorToast: true,
   });
@@ -140,16 +135,19 @@ const VendorProductsPage = () => {
     const newStatus = !product.isAvailable;
     
     try {
-      await updateProductMutation.mutateAsync(
-        { isAvailable: newStatus },
-        {
-          onSuccess: () => {
-            refetch();
-          },
-        }
+      // Use direct API call with ID in endpoint
+      const response = await apiClient.patch(
+        `${API_ENDPOINTS.PRODUCTS}/${id}`,
+        { isAvailable: newStatus }
       );
+      
+      if (response.data.success) {
+        toast.success(response.data.message || "Product availability updated");
+        refetch();
+      }
     } catch (error) {
       console.error("Failed to toggle availability:", error);
+      toast.error(error.response?.data?.message || "Failed to update product availability");
     }
   };
 
@@ -336,17 +334,23 @@ const VendorProductsPage = () => {
     }
 
     try {
-      await updateProductMutation.mutateAsync(productData, {
-        onSuccess: () => {
-          refetch();
-          setEditingId(null);
-          setEditingProduct(null);
-          setEditingProductImageFile(null);
-          setEditingProductImagePreview(null);
-        },
-      });
+      // Use direct API call with ID in endpoint
+      const response = await apiClient.put(
+        `${API_ENDPOINTS.PRODUCTS}/${id}`,
+        productData
+      );
+      
+      if (response.data.success) {
+        toast.success(response.data.message || "Product updated successfully");
+        refetch();
+        setEditingId(null);
+        setEditingProduct(null);
+        setEditingProductImageFile(null);
+        setEditingProductImagePreview(null);
+      }
     } catch (error) {
       console.error("Failed to update product:", error);
+      toast.error(error.response?.data?.message || "Failed to update product");
     }
   };
 
@@ -829,7 +833,7 @@ const VendorProductsPage = () => {
                 </div>
               )}
 
-              {editingId === product.id ? (
+              {editingId === (product._id || product.id) ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input
@@ -970,7 +974,7 @@ const VendorProductsPage = () => {
                     variant="secondary" 
                     size="sm" 
                     className="flex-1"
-                    onClick={() => handleEdit(product.id)}
+                    onClick={() => handleEdit(product._id || product.id)}
                   >
                     <FiEdit className="w-4 h-4" />
                     Edit
@@ -978,7 +982,7 @@ const VendorProductsPage = () => {
                   <Button
                     variant={product.isAvailable ? "ghost" : "secondary"}
                     size="sm"
-                    onClick={() => handleToggleAvailability(product.id)}
+                    onClick={() => handleToggleAvailability(product._id || product.id)}
                   >
                     {product.isAvailable ? "Disable" : "Enable"}
                   </Button>
@@ -1029,7 +1033,7 @@ const VendorProductsPage = () => {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {productsByCategory[category].map((product) => (
-                    <Card key={product.id} className="p-6 hover:shadow-xl transition-all duration-300">
+                    <Card key={product._id || product.id} className="p-6 hover:shadow-xl transition-all duration-300">
                       <div className="flex items-start gap-4 mb-4">
                         <div className="w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex-shrink-0 border border-charcoal-grey/10">
                           {product.imageUrl || (product.image && (product.image.startsWith("http") || product.image.startsWith("data:"))) ? (
@@ -1081,7 +1085,7 @@ const VendorProductsPage = () => {
                           variant="secondary"
                           size="sm"
                           className="flex-1"
-                          onClick={() => handleEdit(product.id)}
+                          onClick={() => handleEdit(product._id || product.id)}
                         >
                           <FiEdit className="w-4 h-4" />
                           Edit
@@ -1089,7 +1093,7 @@ const VendorProductsPage = () => {
                         <Button
                           variant={product.isAvailable ? "ghost" : "secondary"}
                           size="sm"
-                          onClick={() => handleToggleAvailability(product.id)}
+                          onClick={() => handleToggleAvailability(product._id || product.id)}
                         >
                           {product.isAvailable ? "Disable" : "Enable"}
                         </Button>

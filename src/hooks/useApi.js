@@ -15,11 +15,16 @@ import toast from 'react-hot-toast';
  * @returns {Object} Query result
  */
 export const useGet = (key, endpoint, options = {}) => {
+  // Extract params from options
+  const { params, ...queryOptions } = options;
+  
   return useQuery({
-    queryKey: [key],
+    queryKey: [key, params], // Include params in query key for proper caching
     queryFn: async () => {
       try {
-        const response = await apiClient.get(endpoint);
+        // Support query parameters
+        const config = params ? { params } : {};
+        const response = await apiClient.get(endpoint, config);
         return handleApiResponse(response);
       } catch (error) {
         const errorData = handleApiError(error);
@@ -32,7 +37,7 @@ export const useGet = (key, endpoint, options = {}) => {
       }
     },
     enabled: options.enabled !== false,
-    ...options,
+    ...queryOptions,
   });
 };
 
