@@ -3,87 +3,29 @@ import OrdersHeader from "../../features/customer-dashboard/components/OrdersHea
 import OrdersTabs from "../../features/customer-dashboard/components/OrdersTabs";
 import OrdersGrid from "../../features/customer-dashboard/components/OrdersGrid";
 import OrdersStats from "../../features/customer-dashboard/components/OrdersStats";
-
-// Mock data - replace with actual API calls
-const mockOrders = [
-  {
-    id: "ORD-12345",
-    date: "Jan 15, 2024 - 02:30 PM",
-    status: "on-the-way",
-    total: 550.00,
-    itemsCount: 3,
-    items: [
-      { name: "Steam Momo (10 pcs)", quantity: 2, price: 500, emoji: "🥟" },
-      { name: "Jhol Momo (10 pcs)", quantity: 1, price: 300, emoji: "🥟" },
-    ],
-  },
-  {
-    id: "ORD-12344",
-    date: "Jan 14, 2024 - 08:15 PM",
-    status: "delivered",
-    total: 720.00,
-    itemsCount: 2,
-    items: [
-      { name: "Fried Momo (8 pcs)", quantity: 2, price: 560, emoji: "🥟" },
-      { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
-    ],
-  },
-  {
-    id: "ORD-12343",
-    date: "Jan 14, 2024 - 01:45 PM",
-    status: "delivered",
-    total: 600.00,
-    itemsCount: 2,
-    items: [
-      { name: "Chicken Momo (10 pcs)", quantity: 2, price: 520, emoji: "🥟" },
-      { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
-    ],
-  },
-  {
-    id: "ORD-12342",
-    date: "Jan 13, 2024 - 07:20 PM",
-    status: "preparing",
-    total: 480.00,
-    itemsCount: 2,
-    items: [
-      { name: "Buff Momo (10 pcs)", quantity: 2, price: 580, emoji: "🥟" },
-    ],
-  },
-  {
-    id: "ORD-12341",
-    date: "Jan 12, 2024 - 12:00 PM",
-    status: "pending",
-    total: 320.00,
-    itemsCount: 1,
-    items: [
-      { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
-    ],
-  },
-  {
-    id: "ORD-12340",
-    date: "Jan 11, 2024 - 06:45 PM",
-    status: "delivered",
-    total: 650.00,
-    itemsCount: 3,
-    items: [
-      { name: "Kothey Momo (10 pcs)", quantity: 2, price: 540, emoji: "🥟" },
-      { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
-    ],
-  },
-];
+import { useGet } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 
 const CustomerOrdersPage = () => {
   const [activeTab, setActiveTab] = useState("all");
 
+  // Fetch orders from API
+  const { data: ordersData, isLoading } = useGet(
+    'customer-orders',
+    API_ENDPOINTS.ORDERS,
+    { showErrorToast: true }
+  );
+
+  const orders = ordersData?.data?.orders || ordersData?.data || [];
+
   const filteredOrders = useMemo(() => {
-    return activeTab === "all"
-      ? mockOrders
-      : mockOrders.filter((order) => order.status === activeTab);
-  }, [activeTab]);
+    if (activeTab === "all") return orders;
+    return orders.filter((order) => order.status === activeTab);
+  }, [activeTab, orders]);
 
   const ordersCount = useMemo(() => {
     const counts = {
-      total: mockOrders.length,
+      total: orders.length,
       pending: 0,
       preparing: 0,
       "on-the-way": 0,
@@ -91,14 +33,22 @@ const CustomerOrdersPage = () => {
       cancelled: 0,
     };
 
-    mockOrders.forEach((order) => {
+    orders.forEach((order) => {
       if (counts.hasOwnProperty(order.status)) {
         counts[order.status]++;
       }
     });
 
     return counts;
-  }, []);
+  }, [orders]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -110,7 +60,7 @@ const CustomerOrdersPage = () => {
           ordersCount={ordersCount}
         />
         <OrdersGrid orders={filteredOrders} />
-        <OrdersStats orders={mockOrders} />
+        <OrdersStats orders={orders} />
       </div>
     </div>
   );

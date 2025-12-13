@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
   FiArrowLeft, 
@@ -21,143 +21,25 @@ import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import Badge from "../../ui/badges/Badge";
 import ConfirmDialog from "../../ui/modals/ConfirmDialog";
-
-// Mock order data - replace with actual API call
-const mockOrders = [
-  {
-    id: "ORD-12345",
-    date: "Jan 15, 2024 - 02:30 PM",
-    status: "pending",
-    total: 550.00,
-    itemsCount: 3,
-    items: [
-      { name: "Steam Momo (10 pcs)", quantity: 2, price: 500, emoji: "🥟" },
-      { name: "Jhol Momo (10 pcs)", quantity: 1, price: 300, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Ram Bahadur",
-      phone: "+977 9801234567",
-      address: "123 Main Street, Thamel, Kathmandu 44600",
-      email: "ram@example.com",
-    },
-    paymentMethod: "Cash on Delivery",
-    subtotal: 500.00,
-    deliveryFee: 50.00,
-    discount: 0,
-    notes: "Please call before delivery",
-  },
-  {
-    id: "ORD-12344",
-    date: "Jan 15, 2024 - 02:15 PM",
-    status: "preparing",
-    total: 720.00,
-    itemsCount: 2,
-    items: [
-      { name: "Fried Momo (8 pcs)", quantity: 2, price: 560, emoji: "🥟" },
-      { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Sita Kumari",
-      phone: "+977 9812345678",
-      address: "456 Business Park, Durbar Marg, Kathmandu 44600",
-      email: "sita@example.com",
-    },
-    paymentMethod: "Khalti",
-    subtotal: 720.00,
-    deliveryFee: 50.00,
-    discount: 50.00,
-    notes: "",
-  },
-  {
-    id: "ORD-12343",
-    date: "Jan 15, 2024 - 01:45 PM",
-    status: "on-the-way",
-    total: 600.00,
-    itemsCount: 2,
-    items: [
-      { name: "Chicken Momo (10 pcs)", quantity: 2, price: 520, emoji: "🥟" },
-      { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Hari Prasad",
-      phone: "+977 9823456789",
-      address: "789 Residential Area, New Baneshwor, Kathmandu 44600",
-      email: "hari@example.com",
-    },
-    paymentMethod: "Cash on Delivery",
-    subtotal: 550.00,
-    deliveryFee: 50.00,
-    discount: 0,
-    notes: "Deliver to main gate",
-  },
-  {
-    id: "ORD-12342",
-    date: "Jan 15, 2024 - 01:20 PM",
-    deliveredDate: "Jan 15, 2024 - 03:45 PM",
-    status: "delivered",
-    total: 480.00,
-    itemsCount: 2,
-    items: [
-      { name: "Buff Momo (10 pcs)", quantity: 2, price: 580, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Sunita",
-      phone: "+977 9834567890",
-      address: "321 Shopping Complex, Lazimpat, Kathmandu 44600",
-      email: "sunita@example.com",
-      totalOrders: 5,
-      totalSpent: 3500.00,
-    },
-    paymentMethod: "Cash on Delivery",
-    subtotal: 430.00,
-    deliveryFee: 50.00,
-    discount: 0,
-    notes: "Regular customer, prefers spicy",
-    timeline: [
-      { status: "pending", time: "Jan 15, 2024 - 01:20 PM", label: "Order Placed" },
-      { status: "preparing", time: "Jan 15, 2024 - 01:25 PM", label: "Order Accepted" },
-      { status: "on-the-way", time: "Jan 15, 2024 - 02:30 PM", label: "Out for Delivery" },
-      { status: "delivered", time: "Jan 15, 2024 - 03:45 PM", label: "Delivered" },
-    ],
-  },
-  {
-    id: "ORD-12341",
-    date: "Jan 14, 2024 - 11:00 AM",
-    deliveredDate: "Jan 14, 2024 - 01:30 PM",
-    status: "delivered",
-    total: 720.00,
-    itemsCount: 2,
-    items: [
-      { name: "Fried Momo (8 pcs)", quantity: 2, price: 560, emoji: "🥟" },
-      { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Sita Kumari",
-      phone: "+977 9812345678",
-      address: "456 Business Park, Durbar Marg, Kathmandu 44600",
-      email: "sita@example.com",
-      totalOrders: 3,
-      totalSpent: 2100.00,
-    },
-    paymentMethod: "Khalti",
-    subtotal: 720.00,
-    deliveryFee: 50.00,
-    discount: 50.00,
-    notes: "",
-    timeline: [
-      { status: "pending", time: "Jan 14, 2024 - 11:00 AM", label: "Order Placed" },
-      { status: "preparing", time: "Jan 14, 2024 - 11:05 AM", label: "Order Accepted" },
-      { status: "on-the-way", time: "Jan 14, 2024 - 12:15 PM", label: "Out for Delivery" },
-      { status: "delivered", time: "Jan 14, 2024 - 01:30 PM", label: "Delivered" },
-    ],
-  },
-];
+import { useGet, usePatch } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
+import apiClient from "../../api/client";
 
 const VendorOrderDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [order, setOrder] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch order from API
+  const { data: orderData, isLoading } = useGet(
+    `vendor-order-${id}`,
+    `${API_ENDPOINTS.ORDERS}/${id}`,
+    { showErrorToast: true, enabled: !!id }
+  );
+
+  const order = orderData?.data?.order || orderData?.data || null;
+
+  // Will use direct API call for order status updates
+
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: "",
@@ -165,17 +47,6 @@ const VendorOrderDetailPage = () => {
     onConfirm: null,
     variant: "danger",
   });
-
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const foundOrder = mockOrders.find((o) => o.id === id);
-      if (foundOrder) {
-        setOrder(foundOrder);
-      }
-      setIsLoading(false);
-    }, 500);
-  }, [id]);
 
   const statusColors = {
     pending: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200" },
@@ -193,58 +64,53 @@ const VendorOrderDetailPage = () => {
     cancelled: "Cancelled",
   };
 
-  const handleStatusUpdate = (newStatus) => {
-    const statusMessages = {
-      pending: "Order marked as pending",
-      preparing: "Order accepted! Start preparing now.",
-      "on-the-way": "Order marked as ready for delivery",
-      delivered: "Order marked as delivered!",
-      cancelled: "Order cancelled",
-    };
+  const handleStatusUpdate = async (newStatus) => {
+    if (!order) return;
+    
+    const orderId = order._id || order.id;
 
     if (newStatus === "cancelled") {
       setConfirmDialog({
         isOpen: true,
         title: "Cancel Order",
-        message: `Are you sure you want to cancel order #${order.id}? This action cannot be undone.`,
-        onConfirm: () => {
-          setOrder({ ...order, status: newStatus });
-          toast.success(statusMessages[newStatus] || `Order status updated to ${newStatus}`);
-          
-          // TODO: Replace with actual API call
-          // try {
-          //   await api.put(`/orders/${order.id}/status`, { status: newStatus });
-          // } catch (error) {
-          //   toast.error("Failed to update order status");
-          //   // Revert on error
-          //   setOrder(mockOrders.find((o) => o.id === id));
-          // }
+        message: `Are you sure you want to cancel order #${orderId}? This action cannot be undone.`,
+        onConfirm: async () => {
+          try {
+            // According to backend: PUT /orders/:id/status with status: "cancelled"
+            const response = await apiClient.put(
+              `${API_ENDPOINTS.ORDERS}/${orderId}/status`,
+              { status: "cancelled" }
+            );
+            
+            if (response.data.success) {
+              toast.success(response.data.message || "Order cancelled successfully");
+              window.location.reload();
+            }
+          } catch (error) {
+            console.error("Failed to cancel order:", error);
+            toast.error(error.response?.data?.message || "Failed to cancel order");
+          }
         },
         variant: "danger",
       });
       return;
     }
 
-    setOrder({ ...order, status: newStatus });
-    toast.success(statusMessages[newStatus] || `Order status updated to ${newStatus}`);
-
-    // TODO: Replace with actual API call
-    // try {
-    //   await api.put(`/orders/${order.id}/status`, { status: newStatus });
-    // } catch (error) {
-    //   toast.error("Failed to update order status");
-    //   // Revert on error
-    //   setOrder(mockOrders.find((o) => o.id === id));
-    // }
-
-    // TODO: Replace with actual API call
-    // try {
-    //   await api.put(`/orders/${order.id}/status`, { status: newStatus });
-    // } catch (error) {
-    //   toast.error("Failed to update order status");
-    //   // Revert on error
-    //   setOrder(mockOrders.find((o) => o.id === id));
-    // }
+    try {
+      // According to backend: PUT /orders/:id/status
+      const response = await apiClient.put(
+        `${API_ENDPOINTS.ORDERS}/${orderId}/status`,
+        { status: newStatus }
+      );
+      
+      if (response.data.success) {
+        toast.success(response.data.message || "Order status updated successfully");
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      toast.error(error.response?.data?.message || "Failed to update order status");
+    }
   };
 
   const handlePrint = () => {
@@ -314,11 +180,11 @@ const VendorOrderDetailPage = () => {
             </Link>
             <div>
               <h1 className="text-3xl lg:text-4xl font-black text-charcoal-grey mb-2">
-                Order #{order.id}
+                Order #{order._id || order.id}
               </h1>
               <p className="text-charcoal-grey/70 flex items-center gap-2">
                 <FiClock className="w-4 h-4" />
-                {order.date}
+                {order.date || order.createdAt || 'Recently'}
               </p>
             </div>
           </div>
@@ -427,7 +293,9 @@ const VendorOrderDetailPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div className="p-4 rounded-xl bg-white/60">
                 <p className="text-sm text-charcoal-grey/60 mb-1">Order Value</p>
-                <p className="text-lg font-bold text-deep-maroon">Rs. {order.total.toFixed(2)}</p>
+                <p className="text-lg font-bold text-deep-maroon">
+                  Rs. {(order.total || order.amount || 0).toFixed(2)}
+                </p>
               </div>
               <div className="p-4 rounded-xl bg-white/60">
                 <p className="text-sm text-charcoal-grey/60 mb-1">Items Ordered</p>
@@ -450,28 +318,33 @@ const VendorOrderDetailPage = () => {
             <Card className="p-6">
               <h2 className="text-xl font-bold text-charcoal-grey mb-6">Order Items</h2>
               <div className="space-y-4">
-                {order.items?.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-charcoal-grey/5 border border-charcoal-grey/10"
-                  >
-                    <div className="text-3xl">{item.emoji || "🥟"}</div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-charcoal-grey">{item.name}</h3>
-                      <p className="text-sm text-charcoal-grey/60">
-                        Quantity: {item.quantity}
-                      </p>
+                {(order.items || order.orderItems || []).map((item, index) => {
+                  const itemName = item.name || item.product?.name || 'Product';
+                  const itemPrice = item.price || item.product?.price || 0;
+                  const itemQuantity = item.quantity || 1;
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-charcoal-grey/5 border border-charcoal-grey/10"
+                    >
+                      <div className="text-3xl">{item.emoji || "🥟"}</div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-charcoal-grey">{itemName}</h3>
+                        <p className="text-sm text-charcoal-grey/60">
+                          Quantity: {itemQuantity}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-deep-maroon">
+                          Rs. {itemPrice.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-charcoal-grey/60">
+                          Rs. {(itemPrice * itemQuantity).toFixed(2)} total
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-deep-maroon">
-                        Rs. {item.price}
-                      </p>
-                      <p className="text-sm text-charcoal-grey/60">
-                        Rs. {(item.price * item.quantity).toFixed(2)} total
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
 
@@ -525,7 +398,7 @@ const VendorOrderDetailPage = () => {
               <h2 className="text-xl font-bold text-charcoal-grey mb-6">Customer Information</h2>
               
               {/* Customer Order History - Show for delivered orders */}
-              {order.status === "delivered" && order.customer?.totalOrders && (
+              {order.status === "delivered" && (order.customer?.totalOrders || order.customerId?.totalOrders) && (
                 <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-deep-maroon/5 via-golden-amber/5 to-deep-maroon/5 border border-deep-maroon/10">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center">
@@ -533,14 +406,18 @@ const VendorOrderDetailPage = () => {
                     </div>
                     <div>
                       <p className="text-sm text-charcoal-grey/60">Customer Since</p>
-                      <p className="font-bold text-charcoal-grey">{order.customer.totalOrders} Orders</p>
+                      <p className="font-bold text-charcoal-grey">
+                        {order.customer?.totalOrders || order.customerId?.totalOrders || 0} Orders
+                      </p>
                     </div>
                   </div>
-                  {order.customer.totalSpent && (
+                  {(order.customer?.totalSpent || order.customerId?.totalSpent) && (
                     <div className="flex items-center gap-2 text-sm">
                       <FiShoppingBag className="w-4 h-4 text-charcoal-grey/60" />
                       <span className="text-charcoal-grey/70">Total Spent: </span>
-                      <span className="font-bold text-deep-maroon">Rs. {order.customer.totalSpent.toFixed(2)}</span>
+                      <span className="font-bold text-deep-maroon">
+                        Rs. {(order.customer?.totalSpent || order.customerId?.totalSpent || 0).toFixed(2)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -553,10 +430,12 @@ const VendorOrderDetailPage = () => {
                   </div>
                   <div>
                     <p className="text-sm text-charcoal-grey/60">Name</p>
-                    <p className="font-bold text-charcoal-grey">{order.customer?.name}</p>
+                    <p className="font-bold text-charcoal-grey">
+                      {order.customer?.name || order.customerId?.name || 'Customer'}
+                    </p>
                   </div>
                 </div>
-                {order.customer?.phone && (
+                {(order.customer?.phone || order.customerId?.phone) && (
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center">
                       <FiPhone className="w-5 h-5 text-deep-maroon" />
@@ -564,33 +443,40 @@ const VendorOrderDetailPage = () => {
                     <div>
                       <p className="text-sm text-charcoal-grey/60">Phone</p>
                       <a
-                        href={`tel:${order.customer.phone}`}
+                        href={`tel:${order.customer?.phone || order.customerId?.phone}`}
                         className="font-bold text-deep-maroon hover:underline"
                       >
-                        {order.customer.phone}
+                        {order.customer?.phone || order.customerId?.phone}
                       </a>
                     </div>
                   </div>
                 )}
-                {order.customer?.email && (
+                {(order.customer?.email || order.customerId?.email) && (
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center">
-                      <FiMapPin className="w-5 h-5 text-deep-maroon" />
+                      <FiMail className="w-5 h-5 text-deep-maroon" />
                     </div>
                     <div>
                       <p className="text-sm text-charcoal-grey/60">Email</p>
-                      <p className="font-bold text-charcoal-grey">{order.customer.email}</p>
+                      <p className="font-bold text-charcoal-grey">
+                        {order.customer?.email || order.customerId?.email}
+                      </p>
                     </div>
                   </div>
                 )}
-                {order.customer?.address && (
+                {(order.customer?.address || order.deliveryAddress) && (
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center flex-shrink-0 mt-1">
                       <FiMapPin className="w-5 h-5 text-deep-maroon" />
                     </div>
                     <div>
                       <p className="text-sm text-charcoal-grey/60">Delivery Address</p>
-                      <p className="font-medium text-charcoal-grey">{order.customer.address}</p>
+                      <p className="font-medium text-charcoal-grey">
+                        {order.customer?.address || order.deliveryAddress || 
+                         (order.deliveryAddressObj ? 
+                           `${order.deliveryAddressObj.address || ''}, ${order.deliveryAddressObj.area || ''}, ${order.deliveryAddressObj.city || ''}` 
+                           : 'No address provided')}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -603,29 +489,31 @@ const VendorOrderDetailPage = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-charcoal-grey/80">
                   <span>Subtotal</span>
-                  <span>Rs. {order.subtotal?.toFixed(2) || order.total.toFixed(2)}</span>
+                  <span>Rs. {(order.subtotal || order.amount || order.total || 0).toFixed(2)}</span>
                 </div>
-                {order.deliveryFee > 0 && (
+                {(order.deliveryFee || 0) > 0 && (
                   <div className="flex justify-between text-charcoal-grey/80">
                     <span>Delivery Fee</span>
-                    <span>Rs. {order.deliveryFee.toFixed(2)}</span>
+                    <span>Rs. {(order.deliveryFee || 0).toFixed(2)}</span>
                   </div>
                 )}
-                {order.discount > 0 && (
+                {(order.discount || 0) > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>- Rs. {order.discount.toFixed(2)}</span>
+                    <span>- Rs. {(order.discount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="pt-3 border-t border-charcoal-grey/10 flex justify-between">
                   <span className="font-bold text-charcoal-grey">Total</span>
                   <span className="font-bold text-deep-maroon text-lg">
-                    Rs. {order.total.toFixed(2)}
+                    Rs. {(order.total || order.amount || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="pt-3 border-t border-charcoal-grey/10">
                   <p className="text-sm text-charcoal-grey/60 mb-1">Payment Method</p>
-                  <p className="font-medium text-charcoal-grey">{order.paymentMethod}</p>
+                  <p className="font-medium text-charcoal-grey">
+                    {order.paymentMethod || order.payment?.method || 'Not specified'}
+                  </p>
                 </div>
               </div>
             </Card>

@@ -1,17 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import Input from "../../ui/inputs/Input";
 import PasswordChangeDialog from "../../ui/modals/PasswordChangeDialog";
 import toast from "react-hot-toast";
 import { FiSave, FiUser, FiMail, FiPhone, FiLock } from "react-icons/fi";
+import { useAuth } from "../../hooks/useAuth";
+import { useGet, usePut } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 
 const AdminProfilePage = () => {
+  const { user } = useAuth();
+  
+  // Fetch admin profile from API
+  const { data: profileData, isLoading } = useGet(
+    'admin-profile',
+    `${API_ENDPOINTS.USERS}/profile`,
+    { showErrorToast: true }
+  );
+
+  const apiProfile = profileData?.data || {};
+  
   const [profile, setProfile] = useState({
-    name: localStorage.getItem("name") || "Admin",
-    email: localStorage.getItem("email") || "admin@momosewa.com",
-    phone: "+977 9800000000",
+    name: user?.name || apiProfile.name || "Admin",
+    email: user?.email || apiProfile.email || "admin@momosewa.com",
+    phone: user?.phone || apiProfile.phone || "+977 9800000000",
   });
+
+  // Update profile when API data loads
+  useEffect(() => {
+    if (apiProfile && Object.keys(apiProfile).length > 0) {
+      setProfile(prev => ({
+        name: apiProfile.name || prev.name,
+        email: apiProfile.email || prev.email,
+        phone: apiProfile.phone || prev.phone,
+      }));
+    } else if (user) {
+      setProfile(prev => ({
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    }
+  }, [apiProfile, user]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -20,12 +51,20 @@ const AdminProfilePage = () => {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    // TODO: Replace with actual API call
-    localStorage.setItem("name", profile.name);
-    localStorage.setItem("email", profile.email);
-    toast.success("Profile updated successfully!");
-    setIsEditing(false);
+  // Update profile mutation
+  const updateProfileMutation = usePut(
+    'admin-profile',
+    `${API_ENDPOINTS.USERS}/profile`,
+    { showSuccessToast: true, showErrorToast: true }
+  );
+
+  const handleSave = async () => {
+    try {
+      await updateProfileMutation.mutateAsync(profile);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+    }
   };
 
   const handlePasswordChange = (passwordData) => {
@@ -34,6 +73,14 @@ const AdminProfilePage = () => {
     toast.success("Password changed successfully!");
     setShowPasswordDialog(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -47,7 +94,7 @@ const AdminProfilePage = () => {
         <Card className="p-6">
           <div className="flex items-center gap-6 mb-6">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-deep-maroon to-golden-amber flex items-center justify-center text-white font-bold text-4xl shadow-lg">
-              {profile.name.charAt(0).toUpperCase()}
+              {(profile.name || 'A').charAt(0).toUpperCase()}
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-black text-charcoal-grey">{profile.name}</h2>

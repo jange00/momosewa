@@ -1,35 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiMapPin, FiEdit, FiTrash2, FiPlus, FiCheck } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import ConfirmDialog from "../../ui/modals/ConfirmDialog";
 import MapLocationPicker from "../../features/checkout/components/MapLocationPicker";
-
-// Mock addresses - replace with actual API call
-const mockAddresses = [
-  {
-    id: 1,
-    label: "Home",
-    address: "123 Main Street, Kathmandu 44600",
-    city: "Kathmandu",
-    area: "Thamel",
-    landmark: "Near ABC Mall",
-    isDefault: true,
-  },
-  {
-    id: 2,
-    label: "Work",
-    address: "456 Business Park, Kathmandu 44600",
-    city: "Kathmandu",
-    area: "Durbar Marg",
-    landmark: "Office Building",
-    isDefault: false,
-  },
-];
+import { useGet, usePost, usePatch, useDelete } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
+import apiClient from "../../api/client";
 
 const CustomerAddressesPage = () => {
-  const [addresses, setAddresses] = useState(mockAddresses);
+  // Fetch addresses from API
+  const { data: addressesData, isLoading, refetch } = useGet(
+    'addresses',
+    API_ENDPOINTS.ADDRESSES,
+    { showErrorToast: true }
+  );
+
+  const addresses = addressesData?.data?.addresses || addressesData?.data || [];
+
+  // Create address mutation
+  const createAddressMutation = usePost('addresses', API_ENDPOINTS.ADDRESSES, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
+
+  // Update address mutation
+  const updateAddressMutation = usePatch('addresses', API_ENDPOINTS.ADDRESSES, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
+
+  // Delete address mutation
+  const deleteAddressMutation = useDelete('addresses', API_ENDPOINTS.ADDRESSES, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
+
+  // Set default address - will use direct API call (PUT /addresses/:id/default)
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -48,72 +56,97 @@ const CustomerAddressesPage = () => {
   });
 
   const handleDelete = (id) => {
-    const address = addresses.find((addr) => addr.id === id);
+    const address = addresses.find((addr) => (addr._id || addr.id) === id);
     setConfirmDialog({
       isOpen: true,
       title: "Delete Address",
       message: `Are you sure you want to delete "${address?.label || 'this address'}"? This action cannot be undone.`,
-      onConfirm: () => {
-        setAddresses(addresses.filter((addr) => addr.id !== id));
-        toast.success("Address deleted successfully");
+      onConfirm: async () => {
+        try {
+          await deleteAddressMutation.mutateAsync(id, {
+            onSuccess: () => {
+              refetch();
+            },
+          });
+        } catch (error) {
+          console.error("Failed to delete address:", error);
+        }
       },
       variant: "danger",
     });
   };
 
-  const handleSetDefault = (id) => {
-    setAddresses(
-      addresses.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === id,
-      }))
-    );
-    toast.success("Default address updated");
+  const handleSetDefault = async (id) => {
+    try {
+      // According to backend: PUT /addresses/:id/default
+      const response = await apiClient.put(`${API_ENDPOINTS.ADDRESSES}/${id}/default`);
+      if (response.data.success) {
+        toast.success(response.data.message || "Default address updated");
+        refetch();
+      }
+    } catch (error) {
+      console.error("Failed to set default address:", error);
+      toast.error(error.response?.data?.message || "Failed to set default address");
+    }
   };
 
   const handleEdit = (address) => {
-    setEditingId(address.id);
+    setEditingId(address._id || address.id);
     setFormData({
-      label: address.label,
-      address: address.address,
-      city: address.city,
-      area: address.area,
+      label: address.label || "",
+      address: address.address || "",
+      city: address.city || "",
+      area: address.area || "",
       landmark: address.landmark || "",
     });
     setIsAdding(false);
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveAddress = async () => {
     if (!formData.label || !formData.address || !formData.city) {
       toast.error("Please fill in at least label, address, and city");
       return;
     }
 
-    if (editingId) {
-      // Update existing address
-      setAddresses(
-        addresses.map((addr) =>
-          addr.id === editingId
-            ? { ...addr, ...formData }
-            : addr
-        )
-      );
-      toast.success("Address updated successfully");
-    } else {
-      // Add new address
-      const newAddress = {
-        id: Date.now(),
-        ...formData,
-        isDefault: addresses.length === 0,
-      };
-      setAddresses([...addresses, newAddress]);
-      toast.success("Address added successfully");
+    try {
+      if (editingId) {
+        // Update existing address - use direct API call with ID in endpoint
+        try {
+          const response = await apiClient.put(
+            `${API_ENDPOINTS.ADDRESSES}/${editingId}`,
+            { ...formData }
+          );
+          if (response.data.success) {
+            toast.success(response.data.message || "Address updated successfully");
+            refetch();
+            setFormData({ label: "", address: "", city: "", area: "", landmark: "" });
+            setIsAdding(false);
+            setEditingId(null);
+          }
+        } catch (error) {
+          console.error("Failed to update address:", error);
+          toast.error(error.response?.data?.message || "Failed to update address");
+        }
+      } else {
+        // Add new address
+        await createAddressMutation.mutateAsync(
+          {
+            ...formData,
+            isDefault: addresses.length === 0,
+          },
+          {
+            onSuccess: () => {
+              refetch();
+              setFormData({ label: "", address: "", city: "", area: "", landmark: "" });
+              setIsAdding(false);
+              setEditingId(null);
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Failed to save address:", error);
     }
-
-    // Reset form
-    setFormData({ label: "", address: "", city: "", area: "", landmark: "" });
-    setIsAdding(false);
-    setEditingId(null);
   };
 
   const handleCancel = () => {
@@ -226,10 +259,20 @@ const CustomerAddressesPage = () => {
           </Card>
         )}
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+          </div>
+        )}
+
         {/* Addresses List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {addresses.map((address) => (
-            <Card key={address.id} className="p-6">
+        {!isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {addresses.map((address) => {
+              const addressId = address._id || address.id;
+              return (
+                <Card key={addressId} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center">
@@ -257,7 +300,7 @@ const CustomerAddressesPage = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleSetDefault(address.id)}
+                    onClick={() => handleSetDefault(addressId)}
                   >
                     <FiCheck className="w-4 h-4" />
                     Set Default
@@ -270,7 +313,7 @@ const CustomerAddressesPage = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(address.id)}
+                  onClick={() => handleDelete(addressId)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <FiTrash2 className="w-4 h-4" />
@@ -278,10 +321,12 @@ const CustomerAddressesPage = () => {
                 </Button>
               </div>
             </Card>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {addresses.length === 0 && (
+        {!isLoading && addresses.length === 0 && (
           <Card className="p-12">
             <div className="text-center">
               <div className="text-6xl mb-4">📍</div>

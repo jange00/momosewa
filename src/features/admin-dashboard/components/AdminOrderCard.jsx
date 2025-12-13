@@ -57,6 +57,10 @@ const AdminOrderCard = ({ order }) => {
 
   const status = statusColors[order.status] || statusColors.pending;
   const statusLabel = statusLabels[order.status] || order.status;
+  const orderId = order._id || order.id;
+  const orderDate = order.date || order.createdAt || 'Recently';
+  const orderItems = order.items || order.orderItems || [];
+  const orderTotal = order.total || order.amount || 0;
 
   return (
     <Card className={`p-6 hover:shadow-xl transition-all duration-300 group border-l-4 ${status.leftBorder}`}>
@@ -68,7 +72,7 @@ const AdminOrderCard = ({ order }) => {
               <FiPackage className={`w-5 h-5 ${status.text}`} />
             </div>
             <div className="flex-1">
-              <h3 className="font-black text-charcoal-grey text-lg mb-1">Order #{order.id}</h3>
+              <h3 className="font-black text-charcoal-grey text-lg mb-1">Order #{orderId}</h3>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${status.dot} animate-pulse`}></span>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text} ${status.border} border`}>
@@ -81,26 +85,30 @@ const AdminOrderCard = ({ order }) => {
           <div className="space-y-2 mb-4">
             <p className="text-sm text-charcoal-grey/60 flex items-center gap-2">
             <FiClock className="w-4 h-4" />
-              <span>{order.date}</span>
+              <span>{orderDate}</span>
           </p>
           
           {/* Customer Info */}
-          {order.customer && (
+          {(order.customer || order.customerId) && (
               <div className="flex items-center gap-2 text-sm text-charcoal-grey/80 bg-charcoal-grey/5 rounded-lg px-3 py-2">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-deep-maroon/20 to-golden-amber/20 flex items-center justify-center">
                   <FiUser className="w-3.5 h-3.5 text-deep-maroon" />
                 </div>
-                <span className="font-semibold">{order.customer.name}</span>
+                <span className="font-semibold">
+                  {order.customer?.name || order.customerId?.name || 'Customer'}
+                </span>
             </div>
           )}
           
           {/* Vendor Info */}
-          {order.vendor && (
+          {(order.vendor || order.vendorId) && (
               <div className="flex items-center gap-2 text-sm text-charcoal-grey/80 bg-charcoal-grey/5 rounded-lg px-3 py-2">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-golden-amber/20 to-deep-maroon/20 flex items-center justify-center">
                   <FiShoppingBag className="w-3.5 h-3.5 text-golden-amber" />
                 </div>
-                <span className="font-semibold truncate">{order.vendor.name || order.vendor.businessName}</span>
+                <span className="font-semibold truncate">
+                  {order.vendor?.name || order.vendor?.businessName || order.vendorId?.name || 'Vendor'}
+                </span>
             </div>
           )}
         </div>
@@ -108,24 +116,29 @@ const AdminOrderCard = ({ order }) => {
       </div>
 
       {/* Order Items Preview */}
-      {order.items && order.items.length > 0 && (
+      {orderItems.length > 0 && (
         <div className="mb-4 p-3 bg-gradient-to-br from-charcoal-grey/5 to-transparent rounded-xl border border-charcoal-grey/10">
           <div className="space-y-2.5">
-          {order.items.slice(0, 2).map((item, index) => (
+          {orderItems.slice(0, 2).map((item, index) => {
+            const itemName = item.name || item.product?.name || 'Product';
+            const itemPrice = item.price || item.product?.price || 0;
+            const itemQuantity = item.quantity || 1;
+            return (
             <div key={index} className="flex items-center gap-3 text-sm">
                 <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center text-xl shadow-sm">
                   {item.emoji || "🥟"}
                 </div>
                 <span className="flex-1 text-charcoal-grey/90 font-medium">
-                {item.quantity}x {item.name}
+                {itemQuantity}x {itemName}
               </span>
-                <span className="text-charcoal-grey/70 font-semibold">Rs. {item.price}</span>
+                <span className="text-charcoal-grey/70 font-semibold">Rs. {itemPrice.toFixed(2)}</span>
             </div>
-          ))}
-          {order.items.length > 2 && (
+            );
+          })}
+          {orderItems.length > 2 && (
               <div className="pt-2 border-t border-charcoal-grey/10">
                 <p className="text-xs text-charcoal-grey/60 text-center font-medium">
-              +{order.items.length - 2} more items
+              +{orderItems.length - 2} more items
             </p>
               </div>
           )}
@@ -138,16 +151,16 @@ const AdminOrderCard = ({ order }) => {
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-xs text-charcoal-grey/60 mb-1">Total Amount</p>
-            <p className="font-black text-deep-maroon text-xl">Rs. {order.total.toFixed(2)}</p>
+            <p className="font-black text-deep-maroon text-xl">Rs. {orderTotal.toFixed(2)}</p>
           </div>
-          {order.itemsCount && (
+          {(order.itemsCount || orderItems.length) && (
             <div className="text-right">
               <p className="text-xs text-charcoal-grey/60 mb-1">Items</p>
-              <p className="font-bold text-charcoal-grey">{order.itemsCount}</p>
+              <p className="font-bold text-charcoal-grey">{order.itemsCount || orderItems.length}</p>
             </div>
           )}
         </div>
-        <Link to={`/admin/orders/${order.id}`}>
+        <Link to={`/admin/orders/${orderId}`}>
           <Button variant="secondary" size="sm" className="w-full group-hover:bg-deep-maroon group-hover:text-white transition-colors">
             <span>View Details</span>
             <FiArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

@@ -7,54 +7,38 @@ import Button from "../../ui/buttons/Button";
 import Badge from "../../ui/badges/Badge";
 import Input from "../../ui/inputs/Input";
 import ConfirmDialog from "../../ui/modals/ConfirmDialog";
-
-// Mock products - replace with actual API call
-const mockProducts = [
-  {
-    id: 1,
-    name: "Steam Momo (10 pcs)",
-    description: "Delicious steamed momos with your choice of filling",
-    price: 250,
-    category: "Momo",
-    stock: 50,
-    isAvailable: true,
-    image: "🥟",
-  },
-  {
-    id: 2,
-    name: "Fried Momo (8 pcs)",
-    description: "Crispy fried momos served hot",
-    price: 280,
-    category: "Momo",
-    stock: 30,
-    isAvailable: true,
-    image: "🥟",
-  },
-  {
-    id: 3,
-    name: "Jhol Momo (10 pcs)",
-    description: "Momos served in spicy soup",
-    price: 300,
-    category: "Momo",
-    stock: 0,
-    isAvailable: false,
-    image: "🥟",
-  },
-  {
-    id: 4,
-    name: "C-Momo (1 plate)",
-    description: "Spicy chili momo with mayonnaise",
-    price: 320,
-    category: "Momo",
-    stock: 25,
-    isAvailable: true,
-    image: "🥟",
-  },
-];
+import { useGet, usePost, usePut, useDelete } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 
 const VendorProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState(mockProducts);
+  
+  // Fetch products from API
+  const { data: productsData, isLoading, refetch } = useGet(
+    'vendor-products',
+    API_ENDPOINTS.PRODUCTS,
+    { showErrorToast: true }
+  );
+
+  const products = productsData?.data?.products || productsData?.data || [];
+
+  // Create product mutation
+  const createProductMutation = usePost('vendor-products', API_ENDPOINTS.PRODUCTS, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
+
+  // Update product mutation
+  const updateProductMutation = usePut('vendor-products', API_ENDPOINTS.PRODUCTS, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
+
+  // Delete product mutation
+  const deleteProductMutation = useDelete('vendor-products', API_ENDPOINTS.PRODUCTS, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -94,7 +78,7 @@ const VendorProductsPage = () => {
 
   // Get unique categories
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(products.map((p) => p.category))];
+    const uniqueCategories = [...new Set(products.map((p) => p.category || p.categoryName))];
     return uniqueCategories.sort();
   }, [products]);
 
@@ -104,16 +88,16 @@ const VendorProductsPage = () => {
 
     // Apply category filter
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((p) => p.category === selectedCategory);
+      filtered = filtered.filter((p) => (p.category || p.categoryName) === selectedCategory);
     }
 
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((product) => {
-        const matchesName = product.name.toLowerCase().includes(query);
-        const matchesDescription = product.description?.toLowerCase().includes(query);
-        const matchesCategory = product.category.toLowerCase().includes(query);
+        const matchesName = (product.name || '').toLowerCase().includes(query);
+        const matchesDescription = (product.description || '').toLowerCase().includes(query);
+        const matchesCategory = ((product.category || product.categoryName) || '').toLowerCase().includes(query);
         return matchesName || matchesDescription || matchesCategory;
       });
     }
@@ -136,43 +120,57 @@ const VendorProductsPage = () => {
   // Calculate menu visibility stats
   const menuStats = useMemo(() => {
     const visibleInMenu = products.filter(
-      (p) => p.isAvailable && p.stock > 0
+      (p) => (p.isAvailable !== false) && (p.stock || p.quantity || 0) > 0
     ).length;
     const hiddenFromMenu = products.filter(
-      (p) => !p.isAvailable || p.stock === 0
+      (p) => p.isAvailable === false || (p.stock || p.quantity || 0) === 0
     ).length;
     return { visibleInMenu, hiddenFromMenu, total: products.length };
   }, [products]);
 
   // Check if product is visible in menu
   const isVisibleInMenu = (product) => {
-    return product.isAvailable && product.stock > 0;
+    return (product.isAvailable !== false) && (product.stock || product.quantity || 0) > 0;
   };
 
-  const handleToggleAvailability = (id) => {
-    const product = products.find((p) => p.id === id);
+  const handleToggleAvailability = async (id) => {
+    const product = products.find((p) => (p._id || p.id) === id);
+    if (!product) return;
+    
     const newStatus = !product.isAvailable;
     
-    setProducts(
-      products.map((product) =>
-        product.id === id
-          ? { ...product, isAvailable: newStatus }
-          : product
-      )
-    );
-    
-    toast.success(newStatus ? "Product enabled" : "Product disabled");
+    try {
+      await updateProductMutation.mutateAsync(
+        { isAvailable: newStatus },
+        {
+          onSuccess: () => {
+            refetch();
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to toggle availability:", error);
+    }
   };
 
   const handleDelete = (id) => {
-    const product = products.find((p) => p.id === id);
+    const product = products.find((p) => (p._id || p.id) === id);
+    if (!product) return;
+    
     setConfirmDialog({
       isOpen: true,
       title: "Delete Product",
       message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
-      onConfirm: () => {
-        setProducts(products.filter((product) => product.id !== id));
-        toast.success(`"${product.name}" deleted successfully`);
+      onConfirm: async () => {
+        try {
+          await deleteProductMutation.mutateAsync(id, {
+            onSuccess: () => {
+              refetch();
+            },
+          });
+        } catch (error) {
+          console.error("Failed to delete product:", error);
+        }
       },
       variant: "danger",
     });
@@ -231,60 +229,67 @@ const VendorProductsPage = () => {
     }
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.price || !newProduct.stock) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Determine image value - prefer preview (file or URL), fallback to emoji
-    const imageValue = newProductImagePreview || newProduct.imageUrl || (newProduct.image && newProduct.image !== "🥟" ? newProduct.image : "🥟") || "🥟";
-
-    const product = {
-      id: Date.now(),
+    const productData = {
       name: newProduct.name,
       description: newProduct.description || "Delicious momos",
       price: parseFloat(newProduct.price),
       category: newProduct.category,
       stock: parseInt(newProduct.stock),
       isAvailable: true,
-      image: imageValue,
-      imageUrl: newProduct.imageUrl || "",
     };
 
-    setProducts([...products, product]);
-    setNewProduct({
-      name: "",
-      description: "",
-      price: "",
-      category: "Momo",
-      stock: "",
-      image: "🥟",
-      imageUrl: "",
-    });
-    setNewProductImageFile(null);
-    setNewProductImagePreview(null);
-    setIsAdding(false);
-    
-    // TODO: Upload image file to server if newProductImageFile exists
+    // If image file exists, upload it first
     if (newProductImageFile) {
-      // await uploadImageToServer(newProductImageFile);
-      console.log("Image file ready for upload:", newProductImageFile);
+      // TODO: Upload image and get URL, then add to productData
+      // For now, include imageUrl if provided
+      if (newProduct.imageUrl) {
+        productData.imageUrl = newProduct.imageUrl;
+      }
+    } else if (newProduct.imageUrl) {
+      productData.imageUrl = newProduct.imageUrl;
     }
-    
-    toast.success(`"${product.name}" added successfully`);
+
+    try {
+      await createProductMutation.mutateAsync(productData, {
+        onSuccess: () => {
+          refetch();
+          setNewProduct({
+            name: "",
+            description: "",
+            price: "",
+            category: "Momo",
+            stock: "",
+            image: "🥟",
+            imageUrl: "",
+          });
+          setNewProductImageFile(null);
+          setNewProductImagePreview(null);
+          setIsAdding(false);
+        },
+      });
+    } catch (error) {
+      console.error("Failed to create product:", error);
+    }
   };
 
   const handleEdit = (id) => {
-    const product = products.find((p) => p.id === id);
+    const product = products.find((p) => (p._id || p.id) === id);
+    if (!product) return;
+    
     setEditingId(id);
     setEditingProduct({
       name: product.name,
-      description: product.description,
+      description: product.description || "",
       price: product.price.toString(),
-      category: product.category,
-      stock: product.stock.toString(),
-      image: product.image,
+      category: product.category || product.categoryName || "Momo",
+      stock: (product.stock || product.quantity || 0).toString(),
+      image: product.image || "🥟",
       imageUrl: product.imageUrl || product.image || "",
     });
     
@@ -306,43 +311,43 @@ const VendorProductsPage = () => {
     }));
   };
 
-  const handleSaveEdit = (id) => {
+  const handleSaveEdit = async (id) => {
     if (!editingProduct.name || !editingProduct.price || !editingProduct.stock) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Determine image value - prefer preview (file or URL), fallback to emoji
-    const imageValue = editingProductImagePreview || editingProduct.imageUrl || editingProduct.image || "🥟";
+    const productData = {
+      name: editingProduct.name,
+      description: editingProduct.description || "",
+      price: parseFloat(editingProduct.price),
+      category: editingProduct.category,
+      stock: parseInt(editingProduct.stock),
+    };
 
-    setProducts(
-      products.map((product) =>
-        product.id === id
-          ? {
-              ...product,
-              name: editingProduct.name,
-              description: editingProduct.description,
-              price: parseFloat(editingProduct.price),
-              category: editingProduct.category,
-              stock: parseInt(editingProduct.stock),
-              image: imageValue,
-              imageUrl: editingProduct.imageUrl || "",
-            }
-          : product
-      )
-    );
-    
-    // TODO: Upload image file to server if editingProductImageFile exists
+    // If image file exists, upload it first
     if (editingProductImageFile) {
-      // await uploadImageToServer(editingProductImageFile);
-      console.log("Image file ready for upload:", editingProductImageFile);
+      // TODO: Upload image and get URL, then add to productData
+      if (editingProduct.imageUrl) {
+        productData.imageUrl = editingProduct.imageUrl;
+      }
+    } else if (editingProduct.imageUrl) {
+      productData.imageUrl = editingProduct.imageUrl;
     }
-    
-    setEditingId(null);
-    setEditingProduct(null);
-    setEditingProductImageFile(null);
-    setEditingProductImagePreview(null);
-    toast.success("Product updated successfully");
+
+    try {
+      await updateProductMutation.mutateAsync(productData, {
+        onSuccess: () => {
+          refetch();
+          setEditingId(null);
+          setEditingProduct(null);
+          setEditingProductImageFile(null);
+          setEditingProductImagePreview(null);
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update product:", error);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -367,6 +372,14 @@ const VendorProductsPage = () => {
     setNewProductImageFile(null);
     setNewProductImagePreview(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -751,7 +764,7 @@ const VendorProductsPage = () => {
               </div>
             ) : (
               filteredProducts.map((product) => (
-            <Card key={product.id} className="p-6">
+            <Card key={product._id || product.id} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex-shrink-0 border border-charcoal-grey/10">
@@ -790,13 +803,13 @@ const VendorProductsPage = () => {
                 </div>
               </div>
 
-              {editingId !== product.id && (
+              {editingId !== (product._id || product.id) && (
                 <p className="text-charcoal-grey/70 text-sm mb-4">
                   {product.description}
                 </p>
               )}
 
-              {editingId !== product.id && (
+              {editingId !== (product._id || product.id) && (
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-charcoal-grey/10">
                 <div>
                   <p className="text-sm text-charcoal-grey/60">Price</p>
@@ -936,7 +949,7 @@ const VendorProductsPage = () => {
                       variant="primary" 
                       size="sm" 
                       className="flex-1"
-                      onClick={() => handleSaveEdit(product.id)}
+                      onClick={() => handleSaveEdit(product._id || product.id)}
                     >
                       <FiSave className="w-4 h-4" />
                       Save Changes
@@ -972,7 +985,7 @@ const VendorProductsPage = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() => handleDelete(product._id || product.id)}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <FiTrash2 className="w-4 h-4" />

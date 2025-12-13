@@ -1,106 +1,75 @@
-import { useState } from "react";
-import toast from "react-hot-toast";
 import DashboardWelcome from "../../features/vendor-dashboard/components/DashboardWelcome";
 import DashboardStats from "../../features/vendor-dashboard/components/DashboardStats";
 import DashboardQuickActions from "../../features/vendor-dashboard/components/DashboardQuickActions";
 import DashboardRecentOrders from "../../features/vendor-dashboard/components/DashboardRecentOrders";
-import { getVendorData } from "../../utils/vendorData";
-
-// Mock data - replace with actual API calls
-const mockStats = {
-  totalOrders: 156,
-  activeOrders: 8,
-  totalRevenue: 245000,
-  todayRevenue: 12500,
-  ordersTrend: 18,
-  revenueTrend: 22,
-  todayTrend: 15,
-};
-
-const mockRecentOrders = [
-  {
-    id: "ORD-12345",
-    date: "Jan 15, 2024 - 02:30 PM",
-    status: "pending",
-    total: 550.00,
-    itemsCount: 3,
-    items: [
-      { name: "Steam Momo (10 pcs)", quantity: 2, price: 500, emoji: "🥟" },
-      { name: "Jhol Momo (10 pcs)", quantity: 1, price: 300, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Ram Bahadur",
-      phone: "+977 9801234567",
-      address: "123 Main Street, Thamel, Kathmandu 44600",
-    },
-  },
-  {
-    id: "ORD-12344",
-    date: "Jan 15, 2024 - 02:15 PM",
-    status: "preparing",
-    total: 720.00,
-    itemsCount: 2,
-    items: [
-      { name: "Fried Momo (8 pcs)", quantity: 2, price: 560, emoji: "🥟" },
-      { name: "C-Momo (1 plate)", quantity: 1, price: 320, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Sita Kumari",
-      phone: "+977 9812345678",
-      address: "456 Business Park, Durbar Marg, Kathmandu 44600",
-    },
-  },
-  {
-    id: "ORD-12343",
-    date: "Jan 15, 2024 - 01:45 PM",
-    status: "on-the-way",
-    total: 600.00,
-    itemsCount: 2,
-    items: [
-      { name: "Chicken Momo (10 pcs)", quantity: 2, price: 520, emoji: "🥟" },
-      { name: "Veg Momo (10 pcs)", quantity: 1, price: 220, emoji: "🥟" },
-    ],
-    customer: {
-      name: "Hari Prasad",
-      phone: "+977 9823456789",
-      address: "789 Residential Area, New Baneshwor, Kathmandu 44600",
-    },
-  },
-];
+import { useAuth } from "../../hooks/useAuth";
+import { useGet, usePatch } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
+import { vendorService } from "../../services";
+import apiClient from "../../api/client";
+import toast from "react-hot-toast";
 
 const VendorDashboardPage = () => {
-  const vendorData = getVendorData();
-  const userName = vendorData.name || vendorData.businessName || "Vendor";
-  const [recentOrders, setRecentOrders] = useState(mockRecentOrders);
-  
-  // Handle order status updates
-  const handleStatusUpdate = (orderId, newStatus) => {
-    // Update local state
-    setRecentOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  const { user } = useAuth();
+  const userName = user?.name || user?.businessName || "Vendor";
 
-    const statusMessages = {
-      pending: "Order marked as pending",
-      preparing: "Order accepted! Start preparing now.",
-      "on-the-way": "Order marked as ready for delivery",
-      delivered: "Order marked as delivered!",
-      cancelled: "Order cancelled",
-    };
-    
-    toast.success(statusMessages[newStatus] || `Order status updated to ${newStatus}`);
-    
-    // TODO: Replace with actual API call
-    console.log(`Updating order ${orderId} to status: ${newStatus}`);
+  // Fetch vendor orders (vendors get their orders from /orders endpoint, filtered by auth)
+  // Note: /vendors/analytics and /vendors/orders don't exist in backend - use /orders instead
+  const { data: ordersData, isLoading: ordersLoading, refetch } = useGet(
+    'vendor-orders',
+    API_ENDPOINTS.ORDERS,
+    { 
+      showErrorToast: false, // Don't show error toast, handle gracefully
+      retry: 1,
+    }
+  );
+
+  const orders = ordersData?.data?.orders || ordersData?.data || [];
+  const recentOrders = orders.slice(0, 5);
+
+  // Calculate stats from orders (no separate analytics endpoint available)
+  const stats = {
+    totalOrders: orders.length || 0,
+    activeOrders: orders.filter(o => ['pending', 'preparing', 'on-the-way'].includes(o.status)).length || 0,
+    totalRevenue: orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + (o.total || o.amount || 0), 0) || 0,
+    todayRevenue: 0,
+    ordersTrend: 0,
+    revenueTrend: 0,
+    todayTrend: 0,
   };
+
+  // Handle order status updates
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    try {
+      // According to backend: PUT /orders/:id/status
+      const response = await apiClient.put(
+        `${API_ENDPOINTS.ORDERS}/${orderId}/status`,
+        { status: newStatus }
+      );
+      
+      if (response.data.success) {
+        toast.success(response.data.message || "Order status updated successfully");
+        refetch();
+      }
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      toast.error(error.response?.data?.message || "Failed to update order status");
+    }
+  };
+
+  if (ordersLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <DashboardWelcome userName={userName} />
-        <DashboardStats stats={mockStats} />
+        <DashboardStats stats={stats} />
         <DashboardQuickActions />
         <DashboardRecentOrders orders={recentOrders} onStatusUpdate={handleStatusUpdate} />
       </div>

@@ -4,66 +4,40 @@ import Button from "../../ui/buttons/Button";
 import { FiSearch, FiUser, FiMail, FiPhone, FiCalendar, FiDownload } from "react-icons/fi";
 import UserDetailModal from "../../features/admin-dashboard/modals/UserDetailModal";
 import toast from "react-hot-toast";
-
-// Mock data - replace with actual API calls
-const mockUsers = [
-  {
-    id: 1,
-    name: "Ram Bahadur",
-    email: "ram.bahadur@example.com",
-    phone: "+977 9801234567",
-    role: "Customer",
-    joinDate: "Jan 10, 2024",
-    status: "active",
-    totalOrders: 24,
-  },
-  {
-    id: 2,
-    name: "Sita Kumari",
-    email: "sita.kumari@example.com",
-    phone: "+977 9812345678",
-    role: "Customer",
-    joinDate: "Jan 8, 2024",
-    status: "active",
-    totalOrders: 18,
-  },
-  {
-    id: 3,
-    name: "Hari Prasad",
-    email: "hari.prasad@example.com",
-    phone: "+977 9823456789",
-    role: "Customer",
-    joinDate: "Jan 5, 2024",
-    status: "active",
-    totalOrders: 32,
-  },
-  {
-    id: 4,
-    name: "Momo House",
-    email: "momo.house@example.com",
-    phone: "+977 9834567890",
-    role: "Vendor",
-    joinDate: "Dec 20, 2023",
-    status: "active",
-    totalOrders: 156,
-  },
-];
+import { useGet } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 
 const AdminUsersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [users, setUsers] = useState(mockUsers);
+
+  // Fetch users from API
+  const { data: usersData, isLoading } = useGet(
+    'admin-users',
+    `${API_ENDPOINTS.ADMIN}/users`,
+    { showErrorToast: true }
+  );
+
+  const users = usersData?.data?.users || usersData?.data || [];
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.phone.includes(searchQuery);
+      (user.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.phone || '').includes(searchQuery);
     const matchesRole = selectedRole === "all" || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -154,12 +128,14 @@ const AdminUsersPage = () => {
 
         {/* Users Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((user) => (
-            <Card key={user.id} className="p-6">
+          {filteredUsers.map((user) => {
+            const userId = user._id || user.id;
+            return (
+            <Card key={userId} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-deep-maroon to-golden-amber flex items-center justify-center text-white font-bold text-lg">
-                    {user.name.charAt(0).toUpperCase()}
+                    {(user.name || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h3 className="font-bold text-charcoal-grey">{user.name}</h3>
@@ -187,14 +163,21 @@ const AdminUsersPage = () => {
                   <FiPhone className="w-4 h-4" />
                   <span>{user.phone}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                  <FiCalendar className="w-4 h-4" />
-                  <span>Joined {user.joinDate}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                  <FiUser className="w-4 h-4" />
-                  <span>{user.totalOrders} orders</span>
-                </div>
+                {(user.createdAt || user.joinDate) && (
+                  <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                    <FiCalendar className="w-4 h-4" />
+                    <span>
+                      Joined {user.joinDate || 
+                        (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A')}
+                    </span>
+                  </div>
+                )}
+                {(user.totalOrders !== undefined) && (
+                  <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                    <FiUser className="w-4 h-4" />
+                    <span>{user.totalOrders || 0} orders</span>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button 
@@ -221,7 +204,8 @@ const AdminUsersPage = () => {
                 </Button>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
 
         {filteredUsers.length === 0 && (
@@ -239,19 +223,17 @@ const AdminUsersPage = () => {
           setIsModalOpen(false);
           setSelectedUser(null);
         }}
-        onUpdate={(userId, updatedData) => {
-          // Update user in state
-          setUsers((prevUsers) =>
-            prevUsers.map((u) =>
-              u.id === userId ? { ...u, ...updatedData } : u
-            )
-          );
-          // Update selected user if it's the same one
-          if (selectedUser?.id === userId) {
-            setSelectedUser({ ...selectedUser, ...updatedData });
+        onUpdate={async (userId, updatedData) => {
+          try {
+            // TODO: Implement user update API call
+            // await updateUserMutation.mutateAsync({ id: userId, ...updatedData });
+            console.log("Update user:", userId, updatedData);
+            toast.info("User update feature coming soon");
+            setIsModalOpen(false);
+            setSelectedUser(null);
+          } catch (error) {
+            console.error("Failed to update user:", error);
           }
-          // TODO: Replace with actual API call
-          console.log("Update user:", userId, updatedData);
         }}
       />
     </div>

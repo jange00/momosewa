@@ -1,76 +1,149 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiClock, FiMail, FiCheckCircle, FiXCircle, FiLogOut } from "react-icons/fi";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import Logo from "../../common/Logo";
-import { getVendorStatus, getVendorByEmail } from "../../utils/pendingVendors";
 import { USER_ROLES } from "../../common/roleConstants";
+import { useAuth } from "../../hooks/useAuth";
+import { useGet } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 import toast from "react-hot-toast";
 
 const VendorPendingApprovalPage = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const [vendorStatus, setVendorStatus] = useState(null);
   const [vendorData, setVendorData] = useState(null);
-  const [isChecking, setIsChecking] = useState(true);
+  const hasShownApprovalToast = useRef(false);
+  const isApproved = useRef(false);
+
+  // Determine which endpoint to use based on user role
+  // Pending vendors (Customer role) should use /pending-approval
+  // Approved vendors (Vendor role) should use /profile
+  const isPendingVendor = user?.role === USER_ROLES.CUSTOMER;
+  const isApprovedVendor = user?.role === USER_ROLES.VENDOR;
+
+  // Fetch vendor approval status (for pending vendors who are still "Customer" role)
+  const { data: vendorApprovalData, refetch: refetchApproval, error: approvalError } = useGet(
+    'vendor-approval-status',
+    `${API_ENDPOINTS.VENDORS}/pending-approval`,
+    { 
+      showErrorToast: false,
+      ignore404: true, // Don't show toast for 404s (expected if vendor was approved)
+      enabled: isAuthenticated && isPendingVendor && !isApproved.current,
+      refetchInterval: (query) => {
+        // Stop polling if approved
+        if (isApproved.current) return false;
+        return 20000; // Poll every 20 seconds (reduced frequency to avoid spam)
+      },
+      retry: false, // Don't retry - if it fails, we'll check the profile endpoint
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+    }
+  );
+
+  // Fetch vendor profile (for approved vendors or to check if approved)
+  const { data: vendorProfile, refetch: refetchProfile, error: profileError } = useGet(
+    'vendor-profile',
+    `${API_ENDPOINTS.VENDORS}/profile`,
+    { 
+      showErrorToast: false,
+      ignore404: true, // Don't show toast for 404s (expected for pending vendors)
+      enabled: isAuthenticated && !isApproved.current,
+      refetchInterval: (query) => {
+        // Stop polling if approved
+        if (isApproved.current) return false;
+        // Only poll if user is Vendor role (might be approved)
+        if (isApprovedVendor) {
+          return 20000; // Poll every 20 seconds
+        }
+        return false; // Don't poll if user is still Customer role
+      },
+      retry: false,
+      refetchOnWindowFocus: false,
+    }
+  );
 
   useEffect(() => {
-    const checkStatus = () => {
-      const email = localStorage.getItem("email");
-      const role = localStorage.getItem("role");
+    // Check authentication
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+      return;
+    }
 
-      if (!email || role !== USER_ROLES.VENDOR) {
-        navigate("/login");
-        return;
-      }
+    // Handle errors gracefully - don't show toasts for expected 404s
+    // 404 on /profile is expected for pending vendors
+    // 404 on /pending-approval might mean the vendor was approved (check /profile instead)
+    if (approvalError && approvalError.response?.status !== 404) {
+      // Only log non-404 errors, don't show toast
+      console.warn("Error fetching vendor approval status:", approvalError);
+    }
+    if (profileError && profileError.response?.status !== 404) {
+      // Only log non-404 errors, don't show toast
+      console.warn("Error fetching vendor profile:", profileError);
+    }
 
-      const status = getVendorStatus(email);
-      const vendor = getVendorByEmail(email);
+    // Get vendor status from approval status endpoint or vendor profile
+    // According to backend: Pending vendors are "Customer" role, approved vendors are "Vendor" role
+    const approvalData = vendorApprovalData?.data?.vendor || {};
+    const profileData = vendorProfile?.data?.vendor || {};
+    
+    // Determine status - prioritize profile data if available (means vendor is approved)
+    let status = profileData?.status || 
+                 approvalData?.status ||
+                 user?.status || 
+                 user?.vendorStatus || 
+                 user?.approvalStatus;
 
-      setVendorStatus(status);
-      setVendorData(vendor);
-      setIsChecking(false);
+    // If user role is Vendor, they're approved
+    if (user?.role === USER_ROLES.VENDOR && !status) {
+      status = "active";
+    }
 
-      // If approved, redirect to dashboard
-      if (status === "active") {
-        // Update localStorage to mark as approved
-        localStorage.setItem("vendorApproved", "true");
-        localStorage.setItem("vendorStatus", "active");
-        toast.success("Your vendor account has been approved!");
+    // Default to pending if no status found
+    if (!status) {
+      status = "pending";
+    }
+
+    setVendorStatus(status);
+
+    // Set vendor data from approval status, profile, or user object
+    const vendorData = profileData || approvalData || {};
+    setVendorData({
+      email: user?.email || vendorData.email,
+      businessName: vendorData.businessName || user?.businessName,
+      storeName: vendorData.storeName || user?.storeName,
+      applicationDate: vendorData.applicationDate || vendorData.createdAt || user?.createdAt,
+      ...vendorData,
+    });
+
+    // If approved and user role is now "Vendor", redirect to dashboard
+    // Only show toast once and redirect once
+    if ((status === "active" || status === "approved") && user?.role === USER_ROLES.VENDOR) {
+      if (!isApproved.current && !hasShownApprovalToast.current) {
+        isApproved.current = true;
+        hasShownApprovalToast.current = true;
+        // Use a unique toast ID to prevent duplicates
+        toast.success("Your vendor account has been approved!", { 
+          duration: 3000,
+          id: 'vendor-approved', // Unique ID prevents duplicate toasts
+        });
         setTimeout(() => {
-          navigate("/vendor/dashboard");
+          navigate("/vendor/dashboard", { replace: true });
         }, 1500);
       }
-    };
+    }
+  }, [user, vendorApprovalData, vendorProfile, isAuthenticated, authLoading, navigate, approvalError, profileError]);
 
-    checkStatus();
-    
-    // Check status every 5 seconds (for real-time updates)
-    const interval = setInterval(checkStatus, 5000);
-    
-    // Listen for approval events
-    const handleApproval = () => {
-      checkStatus();
-    };
-    window.addEventListener("vendorApproved", handleApproval);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("vendorApproved", handleApproval);
-    };
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("role");
-    localStorage.removeItem("name");
-    localStorage.removeItem("email");
-    localStorage.removeItem("token");
-    localStorage.removeItem("vendorId");
-    toast.success("Logged out successfully");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
-  if (isChecking) {
+  if (authLoading || !vendorStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-charcoal-grey/3 via-white to-golden-amber/5">
         <div className="text-center">
@@ -164,14 +237,45 @@ const VendorPendingApprovalPage = () => {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => {
-                  // Refresh status
-                  const email = localStorage.getItem("email");
-                  const status = getVendorStatus(email);
-                  if (status === "active") {
-                    navigate("/vendor/dashboard");
-                  } else {
-                    toast.info("Your application is still under review");
+                onClick={async () => {
+                  try {
+                    // Refresh status from API
+                    if (isPendingVendor) {
+                      await refetchApproval();
+                    }
+                    if (isApprovedVendor || !isPendingVendor) {
+                      await refetchProfile();
+                    }
+                    
+                    // Wait a bit for state to update
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    const approvalData = vendorApprovalData?.data?.vendor || {};
+                    const profileData = vendorProfile?.data?.vendor || {};
+                    const status = profileData?.status || approvalData?.status;
+                    
+                    // Check if user role has changed to Vendor (approved)
+                    if (user?.role === USER_ROLES.VENDOR || status === "active" || status === "approved") {
+                      if (!hasShownApprovalToast.current) {
+                        hasShownApprovalToast.current = true;
+                        toast.success("Your account has been approved!", { 
+                          duration: 3000,
+                          id: 'vendor-approved-manual', // Unique ID prevents duplicates
+                        });
+                      }
+                      setTimeout(() => {
+                        navigate("/vendor/dashboard");
+                      }, 1000);
+                    } else {
+                      toast.info("Your application is still under review", { 
+                        duration: 2000,
+                        id: 'vendor-pending-status', // Unique ID prevents duplicates
+                      });
+                    }
+                  } catch (error) {
+                    // Silently handle errors - don't show toast for expected 404s
+                    console.log("Status check:", error.response?.status === 404 ? "Not found (expected)" : error.message);
+                    toast.info("Your application is still under review", { duration: 2000 });
                   }
                 }}
               >

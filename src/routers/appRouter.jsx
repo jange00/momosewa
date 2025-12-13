@@ -11,7 +11,6 @@ import SignupPage from "../pages/SignupPage";
 import RoleSelectionPage from "../pages/RoleSelectionPage";
 import CustomerSignupPage from "../pages/CustomerSignupPage";
 import VendorSignupPage from "../pages/VendorSignupPage";
-import AdminSignupPage from "../pages/AdminSignupPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import { USER_ROLES } from "../common/roleConstants";
 import MenuPage from "../pages/MenuPage";
@@ -37,6 +36,8 @@ import VendorNotificationsPage from "../pages/vendor/VendorNotificationsPage";
 import VendorSettingsPage from "../pages/vendor/VendorSettingsPage";
 import VendorProfilePage from "../pages/vendor/VendorProfilePage";
 import VendorPendingApprovalPage from "../pages/vendor/VendorPendingApprovalPage";
+import VendorApplicationSubmittedPage from "../pages/vendor/VendorApplicationSubmittedPage";
+import VendorApprovedPage from "../pages/vendor/VendorApprovedPage";
 
 // Admin Dashboard Pages
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
@@ -82,13 +83,9 @@ export const router = createBrowserRouter([
         path: "/signup/vendor",
         element: <VendorSignupPage />,
       },
-       {
+      {
         path: "/menu",
         element: <MenuPage />,
-      },
-      {
-        path: "/signup/admin",
-        element: <AdminSignupPage />,
       },
       {
         path: "/forgot-password",
@@ -101,6 +98,14 @@ export const router = createBrowserRouter([
       {
         path: "/checkout",
         element: <CheckoutPage />,
+      },
+      {
+        path: "/vendor/application-submitted",
+        element: <VendorApplicationSubmittedPage />,
+      },
+      {
+        path: "/vendor/approved",
+        element: <VendorApprovedPage />,
       },
     ],
   },

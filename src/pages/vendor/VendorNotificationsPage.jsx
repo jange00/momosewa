@@ -3,85 +3,84 @@ import { FiBell, FiCheck } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
-
-// Mock notifications - replace with actual API call
-const initialNotifications = [
-  {
-    id: 1,
-    type: "order",
-    title: "New Order Received",
-    message: "Order #ORD-12345 has been placed",
-    time: "2 minutes ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    type: "order",
-    title: "Order Status Updated",
-    message: "Order #ORD-12344 is now on the way",
-    time: "15 minutes ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    type: "system",
-    title: "Weekly Report",
-    message: "Your weekly sales report is ready",
-    time: "1 hour ago",
-    isRead: true,
-  },
-  {
-    id: 4,
-    type: "order",
-    title: "Order Completed",
-    message: "Order #ORD-12343 has been delivered",
-    time: "2 hours ago",
-    isRead: true,
-  },
-];
+import { useGet, usePatch } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
+import { useSocket } from "../../hooks/useSocket";
 
 const VendorNotificationsPage = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  // Fetch notifications from API
+  const { data: notificationsData, isLoading, refetch } = useGet(
+    'vendor-notifications',
+    API_ENDPOINTS.NOTIFICATIONS,
+    { showErrorToast: true }
+  );
 
-  const handleMarkAsRead = (id) => {
-    const updated = notifications.map((notification) =>
-      notification.id === id ? { ...notification, isRead: true } : notification
-    );
-    setNotifications(updated);
-    
-    // Save to localStorage for persistence
-    localStorage.setItem("vendorNotifications", JSON.stringify(updated));
-    
-    // Trigger custom event to update header count
-    window.dispatchEvent(new Event("vendorNotificationsUpdated"));
-    
-    toast.success("Notification marked as read");
-    
-    // TODO: Replace with actual API call
-    // try {
-    //   await api.put(`/notifications/${id}/read`);
-    // } catch (error) {
-    //   toast.error("Failed to update notification");
-    // }
+  const notifications = notificationsData?.data?.notifications || notificationsData?.data || [];
+
+  // Mark as read mutation
+  const markAsReadMutation = usePatch(
+    'vendor-notifications',
+    `${API_ENDPOINTS.NOTIFICATIONS}`,
+    { showSuccessToast: false }
+  );
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = usePatch(
+    'vendor-notifications',
+    `${API_ENDPOINTS.NOTIFICATIONS}/read-all`,
+    { showSuccessToast: false }
+  );
+
+  // Listen to real-time notifications via Socket.IO
+  useSocket({
+    onNotification: (data) => {
+      // Refetch to get updated list
+      refetch();
+    },
+  });
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsReadMutation.mutateAsync(
+        { isRead: true },
+        {
+          onSuccess: () => {
+            refetch();
+            window.dispatchEvent(new Event("vendorNotificationsUpdated"));
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
   };
 
-  // Initialize from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("vendorNotifications");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setNotifications(parsed);
-      } catch (e) {
-        // Keep initial notifications if parse fails
-      }
-    } else {
-      // Save initial notifications to localStorage
-      localStorage.setItem("vendorNotifications", JSON.stringify(initialNotifications));
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsReadMutation.mutateAsync(
+        {},
+        {
+          onSuccess: () => {
+            refetch();
+            window.dispatchEvent(new Event("vendorNotificationsUpdated"));
+            toast.success("All notifications marked as read");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
     }
-  }, []);
+  };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !(n.isRead || n.read)).length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -98,6 +97,15 @@ const VendorNotificationsPage = () => {
                 : "All caught up!"}
             </p>
           </div>
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllAsRead}
+              disabled={markAllAsReadMutation.isPending}
+              className="px-4 py-2 rounded-xl bg-charcoal-grey/5 text-charcoal-grey/70 hover:bg-charcoal-grey/10 font-semibold text-sm transition-all duration-200 disabled:opacity-50"
+            >
+              {markAllAsReadMutation.isPending ? 'Marking...' : 'Mark all as read'}
+            </button>
+          )}
         </div>
 
         {/* Notifications List */}

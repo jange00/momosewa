@@ -5,52 +5,53 @@ import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
 import Button from "../../ui/buttons/Button";
 import Input from "../../ui/inputs/Input";
-
-// Mock reviews - replace with actual API call
-const mockReviews = [
-  {
-    id: 1,
-    orderId: "ORD-12344",
-    productName: "Fried Momo (8 pcs)",
-    rating: 5,
-    review: "Absolutely delicious! The momos were crispy and flavorful. Highly recommended!",
-    date: "Jan 14, 2024",
-  },
-  {
-    id: 2,
-    orderId: "ORD-12343",
-    productName: "Chicken Momo (10 pcs)",
-    rating: 4,
-    review: "Good taste and quality. Could be a bit more spicy though.",
-    date: "Jan 14, 2024",
-  },
-];
+import { useGet, usePatch } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 
 const CustomerReviewsPage = () => {
   const [editingId, setEditingId] = useState(null);
-  const [reviews, setReviews] = useState(mockReviews);
   const [editForm, setEditForm] = useState({ rating: 5, review: "" });
+
+  // Fetch reviews from API
+  const { data: reviewsData, isLoading, refetch } = useGet(
+    'user-reviews',
+    API_ENDPOINTS.REVIEWS,
+    { showErrorToast: true }
+  );
+
+  const reviews = reviewsData?.data?.reviews || reviewsData?.data || [];
+
+  // Update review mutation
+  const updateReviewMutation = usePatch('user-reviews', API_ENDPOINTS.REVIEWS, {
+    showSuccessToast: true,
+    showErrorToast: true,
+  });
 
   const handleEdit = (review) => {
     setEditingId(review.id);
     setEditForm({ rating: review.rating, review: review.review });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editForm.review.trim()) {
       toast.error("Please enter a review");
       return;
     }
 
-    setReviews(
-      reviews.map((r) =>
-        r.id === editingId
-          ? { ...r, rating: editForm.rating, review: editForm.review }
-          : r
-      )
-    );
-    setEditingId(null);
-    toast.success("Review updated successfully");
+    try {
+      await updateReviewMutation.mutateAsync(
+        { rating: editForm.rating, comment: editForm.review },
+        {
+          onSuccess: () => {
+            refetch();
+            setEditingId(null);
+            setEditForm({ rating: 5, review: "" });
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to update review:", error);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -91,17 +92,29 @@ const CustomerReviewsPage = () => {
           </p>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+          </div>
+        )}
+
         {/* Reviews List */}
-        <div className="space-y-4">
-          {reviews.map((review) => (
-            <Card key={review.id} className="p-6">
+        {!isLoading && (
+          <div className="space-y-4">
+            {reviews.map((review) => {
+              const reviewId = review._id || review.id;
+              return (
+                <Card key={reviewId} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-bold text-charcoal-grey text-lg">
-                      {review.productName}
+                      {review.productName || review.product?.name || 'Product'}
                     </h3>
-                    <Badge variant="default">Order #{review.orderId}</Badge>
+                    {review.orderId && (
+                      <Badge variant="default">Order #{review.orderId}</Badge>
+                    )}
                   </div>
                   {editingId === review.id ? (
                     <div className="space-y-4">
@@ -146,12 +159,14 @@ const CustomerReviewsPage = () => {
                       <div className="flex items-center gap-2 mb-2">
                         {renderStars(review.rating)}
                       </div>
-                      <p className="text-charcoal-grey/70 mb-2">{review.review}</p>
-                      <p className="text-sm text-charcoal-grey/60">{review.date}</p>
+                      <p className="text-charcoal-grey/70 mb-2">{review.review || review.comment || review.body}</p>
+                      <p className="text-sm text-charcoal-grey/60">
+                        {review.date || review.createdAt || 'Recently'}
+                      </p>
                     </>
                   )}
                 </div>
-                {editingId !== review.id && (
+                {editingId !== reviewId && (
                   <button
                     onClick={() => handleEdit(review)}
                     className="p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/60"
@@ -161,10 +176,12 @@ const CustomerReviewsPage = () => {
                 )}
               </div>
             </Card>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {reviews.length === 0 && (
+        {!isLoading && reviews.length === 0 && (
           <Card className="p-12">
             <div className="text-center">
               <div className="text-6xl mb-4">⭐</div>

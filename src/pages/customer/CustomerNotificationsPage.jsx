@@ -3,80 +3,90 @@ import { FiBell, FiCheck } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
-
-// Mock notifications - replace with actual API call
-const mockNotifications = [
-  {
-    id: 1,
-    type: "order",
-    title: "Order On the Way",
-    message: "Your order #ORD-12345 is on the way. Estimated delivery: 15 minutes",
-    date: "2 minutes ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    type: "promotion",
-    title: "Weekend Special",
-    message: "Get 15% off on all orders above Rs. 500. Use code: WEEKEND15",
-    date: "1 hour ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    type: "order",
-    title: "Order Delivered",
-    message: "Your order #ORD-12344 has been delivered successfully!",
-    date: "Yesterday",
-    isRead: true,
-  },
-];
+import { useGet, usePatch } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
+import { useSocket } from "../../hooks/useSocket";
 
 const CustomerNotificationsPage = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState([]);
+  
+  // Fetch notifications from API
+  const { data: notificationsData, isLoading, refetch } = useGet(
+    'notifications',
+    API_ENDPOINTS.NOTIFICATIONS,
+    { showErrorToast: true }
+  );
 
-  const handleMarkAsRead = (id) => {
-    const updatedNotifications = notifications.map((n) =>
-      n.id === id ? { ...n, isRead: true } : n
-    );
-    
-    setNotifications(updatedNotifications);
-    toast.success("Notification marked as read");
-    
-    // Save to localStorage
-    localStorage.setItem("customerNotifications", JSON.stringify(updatedNotifications));
-    
-    // Trigger event for header update
-    window.dispatchEvent(new Event("customerNotificationsUpdated"));
-  };
+  // Mark as read mutation
+  const markAsReadMutation = usePatch(
+    'notifications',
+    `${API_ENDPOINTS.NOTIFICATIONS}`,
+    { showSuccessToast: false }
+  );
 
-  const handleMarkAllAsRead = () => {
-    const updatedNotifications = notifications.map((n) => ({ ...n, isRead: true }));
-    
-    setNotifications(updatedNotifications);
-    toast.success("All notifications marked as read");
-    
-    // Save to localStorage
-    localStorage.setItem("customerNotifications", JSON.stringify(updatedNotifications));
-    
-    // Trigger event for header update
-    window.dispatchEvent(new Event("customerNotificationsUpdated"));
-  };
+  // Mark all as read mutation
+  const markAllAsReadMutation = usePatch(
+    'notifications',
+    `${API_ENDPOINTS.NOTIFICATIONS}/read-all`,
+    { showSuccessToast: false }
+  );
 
-  // Initialize from localStorage
+  // Listen to real-time notifications via Socket.IO
+  useSocket({
+    onNotification: (data) => {
+      // Add new notification to the list
+      setNotifications(prev => [data, ...prev]);
+      // Refetch to get updated list
+      refetch();
+    },
+  });
+
+  // Update notifications when API data changes
   useEffect(() => {
-    const stored = localStorage.getItem("customerNotifications");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setNotifications(parsed);
-      } catch (e) {
-        // Keep mock data if parse fails
-      }
-    } else {
-      localStorage.setItem("customerNotifications", JSON.stringify(mockNotifications));
+    if (notificationsData?.success && notificationsData?.data) {
+      setNotifications(notificationsData.data.notifications || notificationsData.data || []);
     }
-  }, []);
+  }, [notificationsData]);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsReadMutation.mutateAsync(
+        { isRead: true },
+        {
+          onSuccess: () => {
+            // Update local state optimistically
+            setNotifications(prev =>
+              prev.map(n => (n._id === id || n.id === id ? { ...n, isRead: true } : n))
+            );
+            toast.success("Notification marked as read");
+            // Trigger event for header update
+            window.dispatchEvent(new Event("customerNotificationsUpdated"));
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsReadMutation.mutateAsync(
+        {},
+        {
+          onSuccess: () => {
+            // Update local state
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            toast.success("All notifications marked as read");
+            // Trigger event for header update
+            window.dispatchEvent(new Event("customerNotificationsUpdated"));
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -93,52 +103,76 @@ const CustomerNotificationsPage = () => {
           </div>
           <button
             onClick={handleMarkAllAsRead}
-            disabled={notifications.every((n) => n.isRead)}
+            disabled={
+              notifications.every((n) => n.isRead || n.read) ||
+              markAllAsReadMutation.isPending ||
+              isLoading
+            }
             className="px-4 py-2 rounded-xl bg-charcoal-grey/5 text-charcoal-grey/70 hover:bg-charcoal-grey/10 font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Mark all as read
+            {markAllAsReadMutation.isPending ? 'Marking...' : 'Mark all as read'}
           </button>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+          </div>
+        )}
+
         {/* Notifications List */}
-        <div className="space-y-3">
-          {notifications.map((notification) => (
-            <Card
-              key={notification.id}
-              className={`p-5 ${
-                !notification.isRead
-                  ? "border-l-4 border-l-deep-maroon bg-deep-maroon/5"
-                  : ""
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center flex-shrink-0">
-                  <FiBell className="w-6 h-6 text-deep-maroon" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-charcoal-grey">{notification.title}</h3>
-                    {!notification.isRead && (
-                      <span className="w-2 h-2 rounded-full bg-deep-maroon"></span>
+        {!isLoading && (
+          <div className="space-y-3">
+            {notifications.map((notification) => {
+              const notificationId = notification._id || notification.id;
+              const isRead = notification.isRead || notification.read;
+              return (
+                <Card
+                  key={notificationId}
+                  className={`p-5 ${
+                    !isRead
+                      ? "border-l-4 border-l-deep-maroon bg-deep-maroon/5"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 flex items-center justify-center flex-shrink-0">
+                      <FiBell className="w-6 h-6 text-deep-maroon" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-charcoal-grey">
+                          {notification.title || notification.message?.substring(0, 50)}
+                        </h3>
+                        {!isRead && (
+                          <span className="w-2 h-2 rounded-full bg-deep-maroon"></span>
+                        )}
+                      </div>
+                      <p className="text-charcoal-grey/70 mb-2">
+                        {notification.message || notification.body || notification.content}
+                      </p>
+                      <p className="text-sm text-charcoal-grey/60">
+                        {notification.date || notification.createdAt || 'Recently'}
+                      </p>
+                    </div>
+                    {!isRead && (
+                      <button
+                        onClick={() => handleMarkAsRead(notificationId)}
+                        disabled={markAsReadMutation.isPending}
+                        className="p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/60 flex-shrink-0 transition-colors disabled:opacity-50"
+                      >
+                        <FiCheck className="w-5 h-5" />
+                      </button>
                     )}
                   </div>
-                  <p className="text-charcoal-grey/70 mb-2">{notification.message}</p>
-                  <p className="text-sm text-charcoal-grey/60">{notification.date}</p>
-                </div>
-                {!notification.isRead && (
-                  <button
-                    onClick={() => handleMarkAsRead(notification.id)}
-                    className="p-2 rounded-lg hover:bg-charcoal-grey/5 text-charcoal-grey/60 flex-shrink-0 transition-colors"
-                  >
-                    <FiCheck className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-            </Card>
-          ))}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-        {notifications.length === 0 && (
+        {!isLoading && notifications.length === 0 && (
           <Card className="p-12">
             <div className="text-center">
               <div className="text-6xl mb-4">🔔</div>

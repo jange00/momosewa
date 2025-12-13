@@ -3,51 +3,54 @@ import { FiTrendingUp, FiBarChart2, FiPackage, FiUsers } from "react-icons/fi";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import Card from "../../ui/cards/Card";
 import StatCard from "../../ui/cards/StatCard";
-
-// Mock analytics data - replace with actual API call
-const mockAnalytics = {
-  totalRevenue: 245000,
-  totalOrders: 156,
-  totalCustomers: 89,
-  averageOrderValue: 1570,
-  revenueTrend: 22,
-  ordersTrend: 18,
-  customersTrend: 15,
-  avgOrderTrend: 5,
-};
-
-// Revenue data for the last 7 days
-const revenueData = [
-  { date: "Mon", revenue: 12000, orders: 8 },
-  { date: "Tue", revenue: 15000, orders: 10 },
-  { date: "Wed", revenue: 18000, orders: 12 },
-  { date: "Thu", revenue: 22000, orders: 15 },
-  { date: "Fri", revenue: 28000, orders: 18 },
-  { date: "Sat", revenue: 35000, orders: 22 },
-  { date: "Sun", revenue: 32000, orders: 20 },
-];
-
-// Order status distribution
-const orderStatusData = [
-  { name: "Delivered", value: 120, color: "#10b981" },
-  { name: "On the Way", value: 15, color: "#8b5cf6" },
-  { name: "Preparing", value: 12, color: "#3b82f6" },
-  { name: "Pending", value: 9, color: "#f59e0b" },
-];
-
-// Top products performance
-const productPerformanceData = [
-  { name: "Steam Momo", orders: 45, revenue: 11250 },
-  { name: "Fried Momo", orders: 38, revenue: 10640 },
-  { name: "C-Momo", orders: 32, revenue: 10240 },
-  { name: "Jhol Momo", orders: 28, revenue: 8400 },
-  { name: "Chicken Momo", orders: 25, revenue: 13000 },
-];
+import { useGet } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
 
 const COLORS = ["#7a2533", "#d4af37", "#3b82f6", "#10b981", "#f59e0b"];
 
 const VendorAnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState("week");
+
+  // Fetch vendor analytics from API
+  const { data: analyticsData, isLoading } = useGet(
+    'vendor-analytics',
+    `${API_ENDPOINTS.VENDORS}/analytics`,
+    { 
+      showErrorToast: true,
+      params: { timeRange }
+    }
+  );
+
+  const analytics = analyticsData?.data || {};
+  
+  // Use API data or provide defaults
+  const analyticsStats = {
+    totalRevenue: analytics.totalRevenue || 0,
+    totalOrders: analytics.totalOrders || 0,
+    totalCustomers: analytics.totalCustomers || 0,
+    averageOrderValue: analytics.averageOrderValue || 0,
+    revenueTrend: analytics.revenueTrend || 0,
+    ordersTrend: analytics.ordersTrend || 0,
+    customersTrend: analytics.customersTrend || 0,
+    avgOrderTrend: analytics.avgOrderTrend || 0,
+  };
+
+  // Revenue data from API or empty
+  const revenueData = analytics.revenueData || analytics.chartData?.revenue || [];
+
+  // Order status distribution from API or empty
+  const orderStatusData = analytics.orderStatusData || analytics.chartData?.orderStatus || [];
+
+  // Top products performance from API or empty
+  const productPerformanceData = analytics.productPerformanceData || analytics.chartData?.products || [];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -66,26 +69,26 @@ const VendorAnalyticsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Total Revenue"
-            value={`Rs. ${mockAnalytics.totalRevenue.toLocaleString()}`}
-            trend={mockAnalytics.revenueTrend}
+            value={`Rs. ${analyticsStats.totalRevenue.toLocaleString()}`}
+            trend={analyticsStats.revenueTrend}
             icon={FiBarChart2}
           />
           <StatCard
             title="Total Orders"
-            value={mockAnalytics.totalOrders}
-            trend={mockAnalytics.ordersTrend}
+            value={analyticsStats.totalOrders}
+            trend={analyticsStats.ordersTrend}
             icon={FiPackage}
           />
           <StatCard
             title="Total Customers"
-            value={mockAnalytics.totalCustomers}
-            trend={mockAnalytics.customersTrend}
+            value={analyticsStats.totalCustomers}
+            trend={analyticsStats.customersTrend}
             icon={FiUsers}
           />
           <StatCard
             title="Avg. Order Value"
-            value={`Rs. ${mockAnalytics.averageOrderValue.toLocaleString()}`}
-            trend={mockAnalytics.avgOrderTrend}
+            value={`Rs. ${analyticsStats.averageOrderValue.toLocaleString()}`}
+            trend={analyticsStats.avgOrderTrend}
             icon={FiTrendingUp}
           />
         </div>

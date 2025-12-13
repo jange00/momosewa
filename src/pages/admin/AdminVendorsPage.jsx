@@ -1,158 +1,115 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import { FiSearch, FiMail, FiPhone, FiCalendar, FiShoppingBag, FiStar, FiDownload } from "react-icons/fi";
 import VendorDetailModal from "../../features/admin-dashboard/modals/VendorDetailModal";
-import { getPendingVendors, getApprovedVendors, approveVendor, rejectVendor } from "../../utils/pendingVendors";
 import toast from "react-hot-toast";
-
-// Initial mock data for demonstration
-const initializeMockVendors = () => {
-  // Check if vendors already exist in storage
-  const existingPending = getPendingVendors();
-  const existingApproved = getApprovedVendors();
-  
-  // Only add mock data if storage is empty
-  if (existingPending.length === 0 && existingApproved.length === 0) {
-    const mockPendingVendors = [
-      {
-        id: "VENDOR-MOCK-001",
-        role: "vendor",
-        name: "Rajesh Kumar",
-        email: "rajesh.kumar@momosewa.com",
-        phone: "+977 9801234567",
-        businessName: "Rajesh's Momo Corner",
-        businessAddress: "Thamel, Kathmandu",
-        businessLicense: "LIC-2024-001",
-        storeName: "Rajesh's Momo Corner",
-        status: "pending",
-        applicationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "VENDOR-MOCK-002",
-        role: "vendor",
-        name: "Sita Devi",
-        email: "sita.devi@momosewa.com",
-        phone: "+977 9812345678",
-        businessName: "Sita's Delicious Momos",
-        businessAddress: "New Road, Kathmandu",
-        businessLicense: "LIC-2024-002",
-        storeName: "Sita's Delicious Momos",
-        status: "pending",
-        applicationDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "VENDOR-MOCK-003",
-        role: "vendor",
-        name: "Hari Bahadur",
-        email: "hari.bahadur@momosewa.com",
-        phone: "+977 9823456789",
-        businessName: "Hari's Street Food",
-        businessAddress: "Durbar Marg, Kathmandu",
-        businessLicense: "LIC-2024-003",
-        storeName: "Hari's Street Food",
-        status: "pending",
-        applicationDate: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
-
-    const mockApprovedVendors = [
-  {
-        id: "VENDOR-MOCK-004",
-        role: "vendor",
-    name: "Momo House",
-        email: "momo.house@momosewa.com",
-        phone: "+977 9834567890",
-    businessName: "Momo House Restaurant",
-        businessAddress: "Lazimpat, Kathmandu",
-        businessLicense: "LIC-2023-100",
-        storeName: "Momo House Restaurant",
-    status: "active",
-        applicationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
-        approvedDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(), // 28 days ago
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-        id: "VENDOR-MOCK-005",
-        role: "vendor",
-    name: "Delicious Momos",
-        email: "delicious.momos@momosewa.com",
-        phone: "+977 9845678901",
-    businessName: "Delicious Momos & More",
-        businessAddress: "Baneshwor, Kathmandu",
-        businessLicense: "LIC-2023-101",
-        storeName: "Delicious Momos & More",
-    status: "active",
-        applicationDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days ago
-        approvedDate: new Date(Date.now() - 23 * 24 * 60 * 60 * 1000).toISOString(), // 23 days ago
-        createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
-
-    // Save mock data to localStorage
-    localStorage.setItem("pendingVendors", JSON.stringify(mockPendingVendors));
-    localStorage.setItem("approvedVendors", JSON.stringify(mockApprovedVendors));
-  }
-};
+import { useGet, usePatch } from "../../hooks/useApi";
+import { API_ENDPOINTS } from "../../api/config";
+import apiClient from "../../api/client";
 
 const AdminVendorsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [vendors, setVendors] = useState([]);
 
-  // Initialize mock data and load vendors from storage
-  useEffect(() => {
-    initializeMockVendors();
-    loadVendors();
-  }, []);
+  // Fetch vendors from API
+  const { data: vendorsData, isLoading, refetch } = useGet(
+    'admin-vendors',
+    `${API_ENDPOINTS.ADMIN}/vendors`,
+    { showErrorToast: true }
+  );
 
-  const loadVendors = () => {
-    const pendingVendors = getPendingVendors();
-    const approvedVendors = getApprovedVendors();
-    
-    // Combine and format vendors
-    const allVendors = [
-      ...pendingVendors.map(v => ({
-        ...v,
-        joinDate: v.applicationDate ? new Date(v.applicationDate).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        }) : "N/A",
-        totalOrders: 0, // Mock data - replace with actual
-        rating: 0, // Mock data - replace with actual
-        totalRevenue: 0, // Mock data - replace with actual
-      })),
-      ...approvedVendors.map(v => ({
-        ...v,
-        joinDate: v.approvedDate ? new Date(v.approvedDate).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        }) : "N/A",
-        totalOrders: Math.floor(Math.random() * 200) + 50, // Random between 50-250
-        rating: (Math.random() * 1.5 + 3.5).toFixed(1), // Random between 3.5-5.0
-        totalRevenue: Math.floor(Math.random() * 300000) + 100000, // Random between 100k-400k
-      })),
-    ];
-    
-    setVendors(allVendors);
-  };
+  const vendors = vendorsData?.data?.vendors || vendorsData?.data || [];
 
   const filteredVendors = vendors.filter((vendor) => {
     const matchesSearch =
-      vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.phone.includes(searchQuery);
+      (vendor.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.phone || '').includes(searchQuery);
     const matchesStatus = selectedStatus === "all" || vendor.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const handleApproveVendor = async (vendorId) => {
+    try {
+      const vendorIdValue = vendorId || selectedVendor?._id || selectedVendor?.id;
+      if (!vendorIdValue) {
+        toast.error("Vendor ID is required");
+        return;
+      }
+      
+      // Use correct endpoint: PUT /admin/vendors/:id/approve
+      const response = await apiClient.put(
+        `${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/approve`
+      );
+      
+      const result = response.data;
+      if (result.success) {
+        const vendorEmail = selectedVendor?.email || '';
+        toast.success(
+          result.message || "Vendor approved successfully! They can now log in to their account.",
+          { duration: 5000 }
+        );
+        // Show additional info about vendor being able to log in
+        if (vendorEmail) {
+          toast.info(
+            `Vendor ${vendorEmail} can now log in and access their dashboard.`,
+            { duration: 4000 }
+          );
+        }
+        refetch();
+        setIsModalOpen(false);
+        setSelectedVendor(null);
+      } else {
+        toast.error(result.message || "Failed to approve vendor");
+      }
+    } catch (error) {
+      console.error("Failed to approve vendor:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to approve vendor";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleRejectVendor = async (vendorId) => {
+    try {
+      const vendorIdValue = vendorId || selectedVendor?._id || selectedVendor?.id;
+      if (!vendorIdValue) {
+        toast.error("Vendor ID is required");
+        return;
+      }
+      
+      // Use correct endpoint: PUT /admin/vendors/:id/reject
+      const response = await apiClient.put(
+        `${API_ENDPOINTS.ADMIN}/vendors/${vendorIdValue}/reject`,
+        { reason: "Application rejected by admin" }
+      );
+      
+      const result = response.data;
+      if (result.success) {
+        toast.success(result.message || "Vendor rejected successfully!");
+        refetch();
+        setIsModalOpen(false);
+        setSelectedVendor(null);
+      } else {
+        toast.error(result.message || "Failed to reject vendor");
+      }
+    } catch (error) {
+      console.error("Failed to reject vendor:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to reject vendor";
+      toast.error(errorMessage);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-deep-maroon"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 lg:p-8">
@@ -272,12 +229,13 @@ const AdminVendorsPage = () => {
         {/* Vendors Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVendors.map((vendor) => {
+              const vendorId = vendor._id || vendor.id;
               // Check if vendor applied recently (within last 24 hours)
               const isNew = vendor.applicationDate && 
                 (new Date() - new Date(vendor.applicationDate)) < 24 * 60 * 60 * 1000;
               
               return (
-                <Card key={vendor.id} className={`p-6 relative ${vendor.status === "pending" ? "border-l-4 border-yellow-500" : ""}`}>
+                <Card key={vendorId} className={`p-6 relative ${vendor.status === "pending" ? "border-l-4 border-yellow-500" : ""}`}>
                   {isNew && vendor.status === "pending" && (
                     <div className="absolute top-2 right-2">
                       <span className="px-2 py-1 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
@@ -288,11 +246,13 @@ const AdminVendorsPage = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-deep-maroon to-golden-amber flex items-center justify-center text-white font-bold text-lg">
-                    {vendor.name.charAt(0).toUpperCase()}
+                    {(vendor.name || vendor.businessName || 'V').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="font-bold text-charcoal-grey">{vendor.businessName}</h3>
-                    <p className="text-xs text-charcoal-grey/60">{vendor.name}</p>
+                    <h3 className="font-bold text-charcoal-grey">{vendor.businessName || vendor.name || 'Vendor'}</h3>
+                    {vendor.name && vendor.name !== vendor.businessName && (
+                      <p className="text-xs text-charcoal-grey/60">{vendor.name}</p>
+                    )}
                   </div>
                 </div>
                 <span
@@ -318,10 +278,15 @@ const AdminVendorsPage = () => {
                 </div>
                 {vendor.status === "pending" ? (
                   <>
-                    <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                      <FiCalendar className="w-4 h-4" />
-                      <span>Applied {vendor.joinDate}</span>
-                    </div>
+                    {(vendor.createdAt || vendor.joinDate || vendor.applicationDate) && (
+                      <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                        <FiCalendar className="w-4 h-4" />
+                        <span>
+                          Applied {vendor.joinDate || vendor.applicationDate || 
+                            (vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString() : 'Recently')}
+                        </span>
+                      </div>
+                    )}
                     {vendor.businessAddress && (
                       <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
                         <span className="font-semibold">Location:</span>
@@ -337,24 +302,35 @@ const AdminVendorsPage = () => {
                   </>
                 ) : (
                   <>
-                <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                  <FiCalendar className="w-4 h-4" />
-                  <span>Joined {vendor.joinDate}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-charcoal-grey/70">
-                    <FiShoppingBag className="w-4 h-4" />
-                    <span>{vendor.totalOrders} orders</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-golden-amber">
-                    <FiStar className="w-4 h-4 fill-current" />
-                    <span className="font-semibold">{vendor.rating}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
-                  <span className="font-semibold">Revenue:</span>
-                  <span>Rs. {vendor.totalRevenue.toLocaleString()}</span>
-                </div>
+                    {(vendor.createdAt || vendor.joinDate) && (
+                      <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                        <FiCalendar className="w-4 h-4" />
+                        <span>
+                          Joined {vendor.joinDate || 
+                            (vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString() : 'N/A')}
+                        </span>
+                      </div>
+                    )}
+                    {(vendor.totalOrders !== undefined) && (
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2 text-charcoal-grey/70">
+                          <FiShoppingBag className="w-4 h-4" />
+                          <span>{vendor.totalOrders || 0} orders</span>
+                        </div>
+                        {vendor.rating && (
+                          <div className="flex items-center gap-1 text-golden-amber">
+                            <FiStar className="w-4 h-4 fill-current" />
+                            <span className="font-semibold">{vendor.rating}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {(vendor.totalRevenue !== undefined) && (
+                      <div className="flex items-center gap-2 text-sm text-charcoal-grey/70">
+                        <span className="font-semibold">Revenue:</span>
+                        <span>Rs. {(vendor.totalRevenue || 0).toLocaleString()}</span>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -416,60 +392,18 @@ const AdminVendorsPage = () => {
           setIsModalOpen(false);
           setSelectedVendor(null);
         }}
-        onUpdate={(vendorId, updatedData) => {
-          // Update vendor in state
-          setVendors((prevVendors) =>
-            prevVendors.map((v) =>
-              v.id === vendorId ? { ...v, ...updatedData } : v
-            )
-          );
-          // Update selected vendor if it's the same one
-          if (selectedVendor?.id === vendorId) {
-            setSelectedVendor({ ...selectedVendor, ...updatedData });
-          }
-          // Reload vendors to get updated data
-          loadVendors();
-          // TODO: Replace with actual API call
-          console.log("Update vendor:", vendorId, updatedData);
-        }}
-        onApprove={(vendorId) => {
+        onUpdate={async (vendorId, updatedData) => {
           try {
-            // Approve vendor using utility function
-            approveVendor(vendorId);
-            toast.success("Vendor approved successfully!");
-            
-            // Reload vendors list
-            loadVendors();
-            
-            // Close modal
+            // TODO: Implement vendor update API call
+            await refetch();
             setIsModalOpen(false);
             setSelectedVendor(null);
-            
-          // TODO: Replace with actual API call
-            // In production, also send email notification to vendor
           } catch (error) {
-            toast.error(error.message || "Failed to approve vendor");
+            console.error("Failed to update vendor:", error);
           }
         }}
-        onReject={(vendorId) => {
-          try {
-            // Reject vendor using utility function
-            rejectVendor(vendorId);
-            toast.success("Vendor application rejected");
-            
-            // Reload vendors list
-            loadVendors();
-            
-            // Close modal
-            setIsModalOpen(false);
-            setSelectedVendor(null);
-            
-          // TODO: Replace with actual API call
-            // In production, also send email notification to vendor
-          } catch (error) {
-            toast.error(error.message || "Failed to reject vendor");
-          }
-        }}
+        onApprove={handleApproveVendor}
+        onReject={handleRejectVendor}
       />
     </div>
   );

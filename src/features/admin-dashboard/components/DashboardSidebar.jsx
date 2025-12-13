@@ -7,27 +7,24 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import Logo from "../../../common/Logo";
 import { ADMIN_DASHBOARD_MENU_ITEMS } from "../constants/menuItems";
+import { useAuth } from "../../../hooks/useAuth";
 
 const DashboardSidebar = ({ isMobileOpen, onClose }) => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Get user name from localStorage or default
-  const userName = localStorage.getItem("name") || "Admin";
-  const userEmail = localStorage.getItem("email") || "";
+  // Get user name from useAuth
+  const userName = user?.name || "Admin";
+  const userEmail = user?.email || "";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
-    // Clear localStorage
-    localStorage.removeItem("role");
-    localStorage.removeItem("name");
-    localStorage.removeItem("email");
-    localStorage.removeItem("token");
-    toast.success("Logged out successfully");
-    // Redirect to login
-    setTimeout(() => {
-      navigate("/login");
-    }, 300);
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (
@@ -72,7 +69,7 @@ const DashboardSidebar = ({ isMobileOpen, onClose }) => {
             <div className="bg-gradient-to-br from-deep-maroon/10 via-golden-amber/5 to-deep-maroon/10 rounded-xl p-4 border border-charcoal-grey/10">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-deep-maroon to-golden-amber flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                  {userName.charAt(0).toUpperCase()}
+                  {(userName || 'A').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-charcoal-grey truncate">{userName}</p>
