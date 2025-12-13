@@ -47,13 +47,21 @@ const VendorLayout = () => {
     if (authLoading) return; // Wait for auth to load
     
     if (isDashboardRoute && pathname !== "/vendor/pending-approval") {
-      // Check if user is authenticated and is a vendor
-      if (!isAuthenticated || !user || user.role !== USER_ROLES.VENDOR) {
+      // Check if user is authenticated
+      if (!isAuthenticated || !user) {
         return;
       }
 
-      // Check vendor status from user object (API response)
-      // Backend typically returns status as "pending", "active", "rejected", etc.
+      // IMPORTANT: If user role is "Vendor", they are approved (backend changes role after approval)
+      // Don't redirect approved vendors based on status alone
+      if (user.role === USER_ROLES.VENDOR) {
+        // User is approved vendor - allow access to dashboard
+        // Status might not be updated yet, but role change confirms approval
+        return;
+      }
+
+      // If user role is not Vendor, check status
+      // This handles the case where user is still "Customer" role but has vendor application
       const vendorStatus = user.status || user.vendorStatus || user.approvalStatus;
       
       // If status is pending or rejected, redirect to pending approval page
@@ -62,11 +70,16 @@ const VendorLayout = () => {
         return;
       }
       
-      // If status is not "active", redirect to pending approval page
-      if (vendorStatus !== "active" && vendorStatus !== "approved") {
+      // If status is explicitly set and not "active"/"approved", redirect
+      // But only if status exists (don't redirect if status is undefined/null)
+      if (vendorStatus && vendorStatus !== "active" && vendorStatus !== "approved") {
         navigate("/vendor/pending-approval", { replace: true });
         return;
       }
+      
+      // If user role is Customer and no status, they might be pending
+      // But don't redirect if we're not sure - let them access dashboard
+      // The backend will handle authorization
     }
   }, [pathname, isDashboardRoute, navigate, user, isAuthenticated, authLoading]);
 
