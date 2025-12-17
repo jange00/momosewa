@@ -5,21 +5,28 @@ import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
 import Button from "../../ui/buttons/Button";
 import Input from "../../ui/inputs/Input";
+import { useAuth } from "../../hooks/useAuth";
 import { useGet, usePatch } from "../../hooks/useApi";
 import { API_ENDPOINTS } from "../../api/config";
 
 const CustomerReviewsPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ rating: 5, review: "" });
+  const { isAuthenticated } = useAuth();
 
   // Fetch reviews from API
   const { data: reviewsData, isLoading, refetch } = useGet(
     'user-reviews',
     API_ENDPOINTS.REVIEWS,
-    { showErrorToast: true }
+    { 
+      showErrorToast: true,
+      enabled: isAuthenticated, // Only fetch when authenticated
+      refetchOnMount: true, // Always refetch when component mounts
+    }
   );
 
-  const reviews = reviewsData?.data?.reviews || reviewsData?.data || [];
+  const reviews = Array.isArray(reviewsData?.data?.reviews) ? reviewsData.data.reviews :
+                  Array.isArray(reviewsData?.data) ? reviewsData.data : [];
 
   // Update review mutation
   const updateReviewMutation = usePatch('user-reviews', API_ENDPOINTS.REVIEWS, {
@@ -28,8 +35,9 @@ const CustomerReviewsPage = () => {
   });
 
   const handleEdit = (review) => {
-    setEditingId(review.id);
-    setEditForm({ rating: review.rating, review: review.review });
+    const reviewId = review._id || review.id;
+    setEditingId(reviewId);
+    setEditForm({ rating: review.rating, review: review.review || review.comment || review.body || "" });
   };
 
   const handleSaveEdit = async () => {
@@ -100,10 +108,12 @@ const CustomerReviewsPage = () => {
         )}
 
         {/* Reviews List */}
-        {!isLoading && (
+        {!isLoading && Array.isArray(reviews) && (
           <div className="space-y-4">
             {reviews.map((review) => {
+              if (!review) return null;
               const reviewId = review._id || review.id;
+              if (!reviewId) return null;
               return (
                 <Card key={reviewId} className="p-6">
               <div className="flex items-start justify-between mb-4">
@@ -116,7 +126,7 @@ const CustomerReviewsPage = () => {
                       <Badge variant="default">Order #{review.orderId}</Badge>
                     )}
                   </div>
-                  {editingId === review.id ? (
+                  {editingId === (review._id || review.id) ? (
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-semibold text-charcoal-grey mb-2">

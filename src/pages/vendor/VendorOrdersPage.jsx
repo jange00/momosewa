@@ -23,7 +23,8 @@ const VendorOrdersPage = () => {
     { showErrorToast: false } // Handle errors gracefully
   );
 
-  const orders = ordersData?.data?.orders || ordersData?.data || [];
+  const orders = Array.isArray(ordersData?.data?.orders) ? ordersData.data.orders :
+                 Array.isArray(ordersData?.data) ? ordersData.data : [];
 
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");

@@ -3,29 +3,37 @@ import OrdersHeader from "../../features/customer-dashboard/components/OrdersHea
 import OrdersTabs from "../../features/customer-dashboard/components/OrdersTabs";
 import OrdersGrid from "../../features/customer-dashboard/components/OrdersGrid";
 import OrdersStats from "../../features/customer-dashboard/components/OrdersStats";
+import { useAuth } from "../../hooks/useAuth";
 import { useGet } from "../../hooks/useApi";
 import { API_ENDPOINTS } from "../../api/config";
 
 const CustomerOrdersPage = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const { isAuthenticated } = useAuth();
 
   // Fetch orders from API
   const { data: ordersData, isLoading } = useGet(
     'customer-orders',
     API_ENDPOINTS.ORDERS,
-    { showErrorToast: true }
+    { 
+      showErrorToast: true,
+      enabled: isAuthenticated, // Only fetch when authenticated
+      refetchOnMount: true, // Always refetch when component mounts
+    }
   );
 
-  const orders = ordersData?.data?.orders || ordersData?.data || [];
+  const orders = Array.isArray(ordersData?.data?.orders) ? ordersData.data.orders :
+                 Array.isArray(ordersData?.data) ? ordersData.data : [];
 
   const filteredOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
     if (activeTab === "all") return orders;
-    return orders.filter((order) => order.status === activeTab);
+    return orders.filter((order) => order && order.status === activeTab);
   }, [activeTab, orders]);
 
   const ordersCount = useMemo(() => {
     const counts = {
-      total: orders.length,
+      total: orders.length || 0,
       pending: 0,
       preparing: 0,
       "on-the-way": 0,
@@ -33,11 +41,13 @@ const CustomerOrdersPage = () => {
       cancelled: 0,
     };
 
-    orders.forEach((order) => {
-      if (counts.hasOwnProperty(order.status)) {
-        counts[order.status]++;
-      }
-    });
+    if (Array.isArray(orders)) {
+      orders.forEach((order) => {
+        if (order && order.status && counts.hasOwnProperty(order.status)) {
+          counts[order.status]++;
+        }
+      });
+    }
 
     return counts;
   }, [orders]);

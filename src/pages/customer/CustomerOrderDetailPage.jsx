@@ -26,7 +26,7 @@ const CustomerOrderDetailPage = () => {
   const navigate = useNavigate();
 
   // Fetch order from API
-  const { data: orderData, isLoading } = useGet(
+  const { data: orderData, isLoading, refetch } = useGet(
     `order-${id}`,
     `${API_ENDPOINTS.ORDERS}/${id}`,
     { showErrorToast: true, enabled: !!id }
@@ -86,7 +86,7 @@ const CustomerOrderDetailPage = () => {
             if (response.data.success) {
               toast.success(response.data.message || "Order cancelled successfully");
               // Refetch order to get updated status
-              window.location.reload();
+              refetch();
             }
           } catch (error) {
             console.error("Failed to cancel order:", error);
@@ -165,40 +165,13 @@ const CustomerOrderDetailPage = () => {
     cancelled: "Cancelled",
   };
 
-  if (!order) {
-    return (
-      <div className="min-h-screen p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          <Link to="/customer/orders">
-            <Button variant="ghost" size="sm" className="mb-6">
-              <FiArrowLeft className="w-4 h-4" />
-              Back to Orders
-            </Button>
-          </Link>
-          <Card className="p-12">
-            <div className="text-center">
-              <div className="text-6xl mb-4">📦</div>
-              <h3 className="text-xl font-bold text-charcoal-grey mb-2">Order Not Found</h3>
-              <p className="text-charcoal-grey/60 mb-6">
-                The order you're looking for doesn't exist or has been removed.
-              </p>
-              <Link to="/customer/orders">
-                <Button variant="primary" size="md">
-                  View All Orders
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   const status = statusColors[order.status] || statusColors.pending;
   const statusLabel = statusLabels[order.status] || order.status;
   const orderId = order._id || order.id;
   const orderDate = order.date || order.createdAt || 'Recently';
-  const orderItems = order.items || order.orderItems || [];
+  const orderItems = Array.isArray(order.items) ? order.items : 
+                     Array.isArray(order.orderItems) ? order.orderItems : 
+                     [];
 
   return (
     <div className="min-h-screen p-6 lg:p-8">

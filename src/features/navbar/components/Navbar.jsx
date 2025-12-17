@@ -12,8 +12,15 @@ const Navbar = () => {
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
 
-  // Check if user is logged in as customer
-  const isCustomerLoggedIn = isAuthenticated && user?.role === USER_ROLES.CUSTOMER;
+  // Normalize role (handle case variations from backend)
+  const normalizeRole = (role) => {
+    if (!role) return null;
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  };
+
+  // Check if user is logged in as customer (case-insensitive)
+  const userRole = normalizeRole(user?.role);
+  const isCustomerLoggedIn = isAuthenticated && userRole === USER_ROLES.CUSTOMER;
 
   const navLinks = [
     { path: "/", label: "Home" },

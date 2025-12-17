@@ -21,7 +21,8 @@ const VendorProductsPage = () => {
     { showErrorToast: true }
   );
 
-  const products = productsData?.data?.products || productsData?.data || [];
+  const products = Array.isArray(productsData?.data?.products) ? productsData.data.products :
+                   Array.isArray(productsData?.data) ? productsData.data : [];
 
   // Create product mutation
   const createProductMutation = usePost('vendor-products', API_ENDPOINTS.PRODUCTS, {
@@ -235,7 +236,7 @@ const VendorProductsPage = () => {
 
     const productData = {
       name: newProduct.name,
-      description: newProduct.description || "Delicious momos",
+      description: newProduct.description || "Delicious momo",
       price: parseFloat(newProduct.price),
       category: newProduct.category,
       stock: parseInt(newProduct.stock),

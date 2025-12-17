@@ -111,7 +111,7 @@ const MenuPage = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-black text-charcoal-grey mb-2">Our Menu</h1>
           <p className="text-charcoal-grey/60">
-            Discover our delicious collection of authentic Nepali momos
+            Discover our delicious collection of authentic Nepali momo
           </p>
         </div>
 
@@ -120,7 +120,7 @@ const MenuPage = () => {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search for momos..."
+            placeholder="Search for momo..."
           />
 
           {/* View Mode and Filter Toggle */}

@@ -17,7 +17,7 @@ const VendorSettingsPage = () => {
   });
   const [settings, setSettings] = useState({
     storeName: vendorData.storeName || vendorData.businessName || "My Momo Store",
-    storeDescription: vendorData.storeDescription || "Delicious momos delivered fresh to your door",
+    storeDescription: vendorData.storeDescription || "Delicious momo delivered fresh to your door",
     phone: vendorData.phone || "+977 9800000000",
     email: vendorData.email || "vendor@example.com",
     address: vendorData.businessAddress || "",
@@ -30,7 +30,7 @@ const VendorSettingsPage = () => {
     const data = getVendorData();
     setSettings({
       storeName: data.storeName || data.businessName || "My Momo Store",
-      storeDescription: data.storeDescription || "Delicious momos delivered fresh to your door",
+      storeDescription: data.storeDescription || "Delicious momo delivered fresh to your door",
       phone: data.phone || "+977 9800000000",
       email: data.email || "vendor@example.com",
       address: data.businessAddress || "",

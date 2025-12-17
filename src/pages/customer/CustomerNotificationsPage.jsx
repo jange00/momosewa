@@ -3,18 +3,24 @@ import { FiBell, FiCheck } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Card from "../../ui/cards/Card";
 import Badge from "../../ui/badges/Badge";
+import { useAuth } from "../../hooks/useAuth";
 import { useGet, usePatch } from "../../hooks/useApi";
 import { API_ENDPOINTS } from "../../api/config";
 import { useSocket } from "../../hooks/useSocket";
 
 const CustomerNotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
+  const { isAuthenticated } = useAuth();
   
   // Fetch notifications from API
   const { data: notificationsData, isLoading, refetch } = useGet(
     'notifications',
     API_ENDPOINTS.NOTIFICATIONS,
-    { showErrorToast: true }
+    { 
+      showErrorToast: true,
+      enabled: isAuthenticated, // Only fetch when authenticated
+      refetchOnMount: true, // Always refetch when component mounts
+    }
   );
 
   // Mark as read mutation
@@ -44,7 +50,12 @@ const CustomerNotificationsPage = () => {
   // Update notifications when API data changes
   useEffect(() => {
     if (notificationsData?.success && notificationsData?.data) {
-      setNotifications(notificationsData.data.notifications || notificationsData.data || []);
+      const notificationsList = Array.isArray(notificationsData.data.notifications) 
+        ? notificationsData.data.notifications 
+        : Array.isArray(notificationsData.data) 
+        ? notificationsData.data 
+        : [];
+      setNotifications(notificationsList);
     }
   }, [notificationsData]);
 
@@ -122,9 +133,10 @@ const CustomerNotificationsPage = () => {
         )}
 
         {/* Notifications List */}
-        {!isLoading && (
+        {!isLoading && Array.isArray(notifications) && (
           <div className="space-y-3">
             {notifications.map((notification) => {
+              if (!notification) return null;
               const notificationId = notification._id || notification.id;
               const isRead = notification.isRead || notification.read;
               return (

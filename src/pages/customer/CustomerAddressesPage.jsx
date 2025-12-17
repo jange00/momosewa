@@ -5,19 +5,27 @@ import Card from "../../ui/cards/Card";
 import Button from "../../ui/buttons/Button";
 import ConfirmDialog from "../../ui/modals/ConfirmDialog";
 import MapLocationPicker from "../../features/checkout/components/MapLocationPicker";
+import { useAuth } from "../../hooks/useAuth";
 import { useGet, usePost, usePatch, useDelete } from "../../hooks/useApi";
 import { API_ENDPOINTS } from "../../api/config";
 import apiClient from "../../api/client";
 
 const CustomerAddressesPage = () => {
+  const { isAuthenticated } = useAuth();
+  
   // Fetch addresses from API
   const { data: addressesData, isLoading, refetch } = useGet(
     'addresses',
     API_ENDPOINTS.ADDRESSES,
-    { showErrorToast: true }
+    { 
+      showErrorToast: true,
+      enabled: isAuthenticated, // Only fetch when authenticated
+      refetchOnMount: true, // Always refetch when component mounts
+    }
   );
 
-  const addresses = addressesData?.data?.addresses || addressesData?.data || [];
+  const addresses = Array.isArray(addressesData?.data?.addresses) ? addressesData.data.addresses :
+                    Array.isArray(addressesData?.data) ? addressesData.data : [];
 
   // Create address mutation
   const createAddressMutation = usePost('addresses', API_ENDPOINTS.ADDRESSES, {
@@ -267,10 +275,12 @@ const CustomerAddressesPage = () => {
         )}
 
         {/* Addresses List */}
-        {!isLoading && (
+        {!isLoading && Array.isArray(addresses) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {addresses.map((address) => {
+              if (!address) return null;
               const addressId = address._id || address.id;
+              if (!addressId) return null;
               return (
                 <Card key={addressId} className="p-6">
               <div className="flex items-start justify-between mb-4">

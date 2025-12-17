@@ -24,14 +24,19 @@ const VendorDashboardPage = () => {
     }
   );
 
-  const orders = ordersData?.data?.orders || ordersData?.data || [];
-  const recentOrders = orders.slice(0, 5);
+  const orders = Array.isArray(ordersData?.data?.orders) ? ordersData.data.orders :
+                 Array.isArray(ordersData?.data) ? ordersData.data : [];
+  const recentOrders = Array.isArray(orders) ? orders.slice(0, 5) : [];
 
   // Calculate stats from orders (no separate analytics endpoint available)
   const stats = {
     totalOrders: orders.length || 0,
-    activeOrders: orders.filter(o => ['pending', 'preparing', 'on-the-way'].includes(o.status)).length || 0,
-    totalRevenue: orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + (o.total || o.amount || 0), 0) || 0,
+    activeOrders: Array.isArray(orders) ? orders.filter(o => 
+      o && ['pending', 'preparing', 'on-the-way'].includes(o.status)
+    ).length : 0,
+    totalRevenue: Array.isArray(orders) ? orders.filter(o => 
+      o && o.status === 'delivered'
+    ).reduce((sum, o) => sum + (o.total || o.amount || 0), 0) : 0,
     todayRevenue: 0,
     ordersTrend: 0,
     revenueTrend: 0,

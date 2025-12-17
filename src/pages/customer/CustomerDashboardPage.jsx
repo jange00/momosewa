@@ -8,31 +8,36 @@ import { useGet } from "../../hooks/useApi";
 import { API_ENDPOINTS } from "../../api/config";
 
 const CustomerDashboardPage = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const userName = user?.name || "Customer";
 
   // Fetch orders for stats and recent orders
   const { data: ordersData, isLoading: ordersLoading } = useGet(
     'customer-orders',
     API_ENDPOINTS.ORDERS,
-    { showErrorToast: true }
+    { 
+      showErrorToast: true,
+      enabled: isAuthenticated, // Only fetch when authenticated
+      refetchOnMount: true, // Always refetch when component mounts
+    }
   );
 
-  const orders = ordersData?.data?.orders || ordersData?.data || [];
+  const orders = Array.isArray(ordersData?.data?.orders) ? ordersData.data.orders :
+                 Array.isArray(ordersData?.data) ? ordersData.data : [];
   
   // Calculate stats from orders
   const stats = {
-    totalOrders: orders.length,
-    activeOrders: orders.filter((o) => 
-      ['pending', 'preparing', 'on-the-way'].includes(o.status)
-    ).length,
-    totalSpent: orders
-      .filter((o) => o.status === 'delivered')
-      .reduce((sum, o) => sum + (o.total || o.amount || 0), 0),
+    totalOrders: orders.length || 0,
+    activeOrders: Array.isArray(orders) ? orders.filter((o) => 
+      o && ['pending', 'preparing', 'on-the-way'].includes(o.status)
+    ).length : 0,
+    totalSpent: Array.isArray(orders) ? orders
+      .filter((o) => o && o.status === 'delivered')
+      .reduce((sum, o) => sum + (o.total || o.amount || 0), 0) : 0,
   };
 
   // Get recent orders (last 3)
-  const recentOrders = orders.slice(0, 3);
+  const recentOrders = Array.isArray(orders) ? orders.slice(0, 3) : [];
 
   if (ordersLoading) {
     return (

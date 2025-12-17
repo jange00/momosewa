@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
+import { useQueryClient } from "@tanstack/react-query";
 import LoginPromo from "../features/auth/components/login/LoginPromo";
 import LoginForm from "../features/auth/components/login/LoginForm";
 import Footer from "../features/landing/components/Footer";
@@ -11,6 +12,7 @@ import toast from "react-hot-toast";
 const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const { login, loading: authLoading, isAuthenticated, user } = useAuth();
   const [formData, setFormData] = useState({
     emailOrPhone: "",
@@ -91,6 +93,9 @@ const LoginPage = () => {
       console.log('Login API result:', result);
       
       if (result && result.success) {
+        // Invalidate all React Query cache to ensure fresh data after login
+        queryClient.invalidateQueries();
+        
         // Get user from API response (most reliable)
         const loggedInUser = result.data?.user;
         
@@ -145,7 +150,7 @@ const LoginPage = () => {
           return;
         }
         
-        // Check Customer
+        // Check Customer - redirect to landing page (navbar will show user menu)
         if (userRole === USER_ROLES.CUSTOMER) {
           navigate("/", { replace: true });
           return;
